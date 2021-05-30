@@ -71,10 +71,10 @@ function New-PlatformFolder {
         ".bin"      { $folderName = $BaseName | New-MegaDriveFolderName; break }        
         ".nes"      { $folderName = $BaseName | New-FamicomFolderName; break }
         ".pce"      { $folderName = $BaseName | New-PCEngineFolderName; break }
-        ".sms"      { $folderName = "Master System"; break }
+        ".sms"      { $folderName = $BaseName | New-MasterSystemFolderName; break }
         ".sfc"      { $folderName = "Super Famicom"; break }
-        ".smc"      { $folderName = "SNES"; break }
-        ".z64"      { $folderName = "Nintendo 64"; break }
+        ".smc"      { $folderName = $BaseName | New-SuperFamicomFolderName; break }
+        ".z64"      { $folderName = $BaseName | New-Nintendo64FolderName; break }
         default     { $folderName = "Other"; break }
     }
 
@@ -90,7 +90,7 @@ function New-FamicomFolderName {
     switch -Regex ($FileName) {
         '(\(PC10\))'    { $folderName = "PlayChoice-10"; break }
         '(\(VS\))'      { $folderName = "Nintendo VS System"; break }
-        '(\(J\))'       { $folderName = "Famicom"; break}
+        '(\(J\))'       { $folderName = "Famicom"; break }
         '(\(U\))'       { $folderName = "NES (NTSC)"; break }
         '(\(E\))'       { $folderName = "NES (PAL)"; break }
         default         { $folderName = "NES"; break }
@@ -114,6 +114,36 @@ function New-PCEngineFolderName {
     $folderName
 }
 
+function New-MasterSystemFolderName {
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [string]$FileName
+    )
+
+    switch -Regex ($FileName) {
+        '(\([JU]\))'    { $folderName = "Master System (NTSC)"; break }
+        '(\(E\))'       { $folderName = "Master System (PAL)"; break }
+        default         { $folderName = "Master System"; break }
+    }
+
+    $folderName
+}
+
+function New-Nintendo64FolderName {
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [string]$FileName
+    )
+
+    switch -Regex ($FileName) {
+        '(\([JU]\))'    { $folderName = "Nintendo 64 (NTSC)"; break }
+        '(\(E\))'       { $folderName = "Nintendo 64 (PAL)"; break }
+        default         { $folderName = "Nintendo 64"; break }
+    }
+
+    $folderName
+}
+
 function New-MegaDriveFolderName {
     param (
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
@@ -127,6 +157,22 @@ function New-MegaDriveFolderName {
         '(\(E\))'       { $folderName = "Mega Drive (PAL)"; break }
         '(\(J\))'       { $folderName = "Mega Drive (NTSC)"; break }
         default         { $folderName = "Mega Drive"; break }
+    }
+
+    $folderName
+}
+
+function New-SuperFamicomFolderName {
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [string]$FileName
+    )
+
+    switch -Regex ($FileName) {
+        '(\(J\))'       { $folderName = "Super Famicom"; break }
+        '(\(U\))'       { $folderName = "SNES (NTSC)"; break }
+        '(\(E\))'       { $folderName = "SNES (PAL)"; break }
+        default         { $folderName = "SNES"; break }
     }
 
     $folderName
