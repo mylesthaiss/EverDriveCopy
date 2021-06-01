@@ -27,9 +27,41 @@ param (
     [switch]$NoPlatform
 )
 
+enum Broadcast { NTSC; PAL }
+enum Region { Japan; USA; Europe }
+
 # ---------------------------------------------------------------------------------------
 #   FUNCTIONS
 # ---------------------------------------------------------------------------------------
+function Get-BroadcastTypeFromFileName {
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [string]$FileName
+    )
+    
+    switch -Regex ($FileName) {
+        '(\([JU145]\))'     { $broadcastType = [Broadcast]::NTSC; break }
+        '(\([ABCEI8]\))'    { $broadcastType = [Broadcast]::PAL; break }
+    }
+
+    $broadcastType
+}
+
+function Get-RegionFromFileName {
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [string]$FileName
+    )
+
+    switch -Regex ($FileName) {
+        '(\([U4]\))'    { $region = [Region]::USA; break }
+        '(\([J1]\))'    { $region = [Region]::Japan; break }
+        '(\(E\))'       { $region = [Region]::Europe; break }
+    }
+
+    $region
+}
+
 function New-SubFolderName {
     param (
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
@@ -88,12 +120,24 @@ function New-FamicomFolderName {
     )
 
     switch -Regex ($FileName) {
-        '(\(PC10\))'    { $folderName = "PlayChoice-10"; break }
-        '(\(VS\))'      { $folderName = "Nintendo VS System"; break }
-        '(\(J\))'       { $folderName = "Famicom"; break }
-        '(\(U\))'       { $folderName = "NES (NTSC)"; break }
-        '(\(E\))'       { $folderName = "NES (PAL)"; break }
-        default         { $folderName = "NES"; break }
+        '(\(PC10\))' { 
+            $folderName = "PlayChoice-10"
+            break
+        }
+
+        '(\(VS\))' { 
+            $folderName = "Nintendo VS System"
+            break
+        }
+
+        default {
+            switch ($FileName | Get-RegionFromFileName) {
+                'Japan'     { $folderName = "Famicom"; break }
+                'USA'       { $folderName = "NES (NTSC)"; break }
+                'Europe'    { $folderName = "NES (PAL)"; break }
+                default     { $folderName = "NES"; break }
+            }
+        }
     }
 
     $folderName
@@ -106,9 +150,18 @@ function New-PCEngineFolderName {
     )
 
     switch -Regex ($FileName) {
-        '(\(SGX\))'     { $folderName = "SuperGrafx"; break }
-        '(\(U\))'       { $folderName = "TurboGrafx-16"; break }
-        default         { $folderName = "PC Engine"; break }
+        '(\(SGX\))' { 
+            $folderName = "SuperGrafx"
+            break
+        }
+
+        default {
+            switch ($FileName | Get-RegionFromFileName) {
+                'USA'       { $folderName = "TurboGrafx-16"; break }
+                'Europe'    { $folderName = "TurboGrafx"; break }
+                default     { $folderName = "PC Engine"; break }
+            }
+        }
     }
 
     $folderName
@@ -120,10 +173,10 @@ function New-MasterSystemFolderName {
         [string]$FileName
     )
 
-    switch -Regex ($FileName) {
-        '(\([JU]\))'    { $folderName = "Master System (NTSC)"; break }
-        '(\(E\))'       { $folderName = "Master System (PAL)"; break }
-        default         { $folderName = "Master System"; break }
+    switch ($FileName | Get-BroadcastTypeFromFileName) {
+        'NTSC'      { $folderName = "Master System (NTSC)"; break }
+        'PAL'       { $folderName = "Master System (PAL)"; break }
+        default     { $folderName = "Master System"; break }
     }
 
     $folderName
@@ -135,10 +188,10 @@ function New-Nintendo64FolderName {
         [string]$FileName
     )
 
-    switch -Regex ($FileName) {
-        '(\([JU]\))'    { $folderName = "Nintendo 64 (NTSC)"; break }
-        '(\(E\))'       { $folderName = "Nintendo 64 (PAL)"; break }
-        default         { $folderName = "Nintendo 64"; break }
+    switch ($FileName | Get-BroadcastTypeFromFileName) {
+        'NTSC'      { $folderName = "Nintendo 64 (NTSC)"; break }
+        'PAL'       { $folderName = "Nintendo 64 (PAL)"; break }
+        default     { $folderName = "Nintendo 64"; break }
     }
 
     $folderName
@@ -151,12 +204,26 @@ function New-MegaDriveFolderName {
     )
 
     switch -Regex ($FileName) {
-        'BIOS'          { $folderName = "_BIOS"; break }
-        '32X'           { $folderName = "32X"; break }
-        '(\(U\))'       { $folderName = "Genesis"; break }
-        '(\(E\))'       { $folderName = "Mega Drive (PAL)"; break }
-        '(\(J\))'       { $folderName = "Mega Drive (NTSC)"; break }
-        default         { $folderName = "Mega Drive"; break }
+        'BIOS' { 
+            $folderName = "_BIOS"
+            break 
+        }
+
+        '32X' { 
+            $folderName = "32X"
+            break
+        }
+        
+        default {
+            switch ($FileName | Get-RegionFromFileName) {
+                'USA'       { $folderName = "Genesis"; break }
+                'Japan'     { $folderName = "Mega Drive (NTSC)"; break }
+                'Europe'    { $folderName = "Mega Drive (PAL)"; break }
+                default     { $folderName = "Mega Drive"; break }
+            }
+
+            break
+        }
     }
 
     $folderName
@@ -168,11 +235,11 @@ function New-SuperFamicomFolderName {
         [string]$FileName
     )
 
-    switch -Regex ($FileName) {
-        '(\(J\))'       { $folderName = "Super Famicom"; break }
-        '(\(U\))'       { $folderName = "SNES (NTSC)"; break }
-        '(\(E\))'       { $folderName = "SNES (PAL)"; break }
-        default         { $folderName = "SNES"; break }
+    switch ($FileName | Get-RegionFromFileName) {
+        'Japan'     { $folderName = "Super Famicom"; break }
+        'USA'       { $folderName = "SNES (NTSC)"; break }
+        'Europe'    { $folderName = "SNES (PAL)"; break }
+        default     { $folderName = "SNES"; break }
     }
 
     $folderName
