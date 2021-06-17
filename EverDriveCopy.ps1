@@ -28,7 +28,7 @@ param (
 )
 
 enum Broadcast { NTSC; PAL }
-enum Region { Japan; USA; Europe }
+enum Region { Japan; USA; Europe; Australia }
 
 # ---------------------------------------------------------------------------------------
 #   FUNCTIONS
@@ -41,7 +41,10 @@ function Get-BroadcastTypeFromFileName {
     
     switch -Regex ($FileName) {
         '(\([JU145]\))'     { $broadcastType = [Broadcast]::NTSC; break }
-        '(\([ABCEI8]\))'    { $broadcastType = [Broadcast]::PAL; break }
+        '(\([ABCEFGIS8]\))' { $broadcastType = [Broadcast]::PAL; break }
+        '(\(UK\))'          { $broadcastType = [Broadcast]::PAL; break }
+        '(\(SW\))'          { $broadcastType = [Broadcast]::PAL; break }
+        '(\(NL\))'          { $broadcastType = [Broadcast]::PAL; break }
     }
 
     $broadcastType
@@ -56,10 +59,35 @@ function Get-RegionFromFileName {
     switch -Regex ($FileName) {
         '(\([U4]\))'    { $region = [Region]::USA; break }
         '(\([J1]\))'    { $region = [Region]::Japan; break }
-        '(\(E\))'       { $region = [Region]::Europe; break }
+        '(\([EFGS]\))'  { $region = [Region]::Europe; break }
+        '(\(A\))'       { $region = [Region]::Australia; break }
     }
 
     $region
+}
+
+function New-RomFileName {
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [PSCustomObject]$File
+    )
+
+    $newExtension = $File.Extension.ToLower()
+    $newBaseName = $File.BaseName.Trim() `
+        -replace '^The ','' `
+        -replace ', The','' `
+        -replace '\(Europe\)','(E)' `
+        -replace '\(USA\)','(U)' `
+        -replace '\(Japan\)','(J)' `
+        -replace '\(China\)','(C)' `
+        -replace '\(Public Domain\)','(PD)' `
+        -replace '\(Unlicensed\)','(Unl)'
+
+    New-Object PSObject -Property @{
+        BaseName    = $newBaseName
+        Extension   = $newExtension
+        Name        = "{0}{1}" -f $newBaseName, $newExtension
+    }
 }
 
 function New-SubFolderName {
@@ -135,6 +163,7 @@ function New-FamicomFolderName {
                 'Japan'     { $folderName = "Famicom"; break }
                 'USA'       { $folderName = "NES (NTSC)"; break }
                 'Europe'    { $folderName = "NES (PAL)"; break }
+                'Australia' { $folderName = "NES (PAL)"; break }
                 default     { $folderName = "NES"; break }
             }
         }
@@ -173,9 +202,11 @@ function New-MasterSystemFolderName {
         [string]$FileName
     )
 
-    switch ($FileName | Get-BroadcastTypeFromFileName) {
-        'NTSC'      { $folderName = "Master System (NTSC)"; break }
-        'PAL'       { $folderName = "Master System (PAL)"; break }
+    switch ($FileName | Get-RegionFromFileName) {
+        'Japan'     { $folderName = "Mark III"; break }
+        'USA'       { $folderName = "Master System (NTSC)"; break }
+        'Europe'    { $folderName = "Master System (PAL)"; break }
+        'Australia' { $folderName = "Master System (PAL)"; break }
         default     { $folderName = "Master System"; break }
     }
 
@@ -219,6 +250,7 @@ function New-MegaDriveFolderName {
                 'USA'       { $folderName = "Genesis"; break }
                 'Japan'     { $folderName = "Mega Drive (NTSC)"; break }
                 'Europe'    { $folderName = "Mega Drive (PAL)"; break }
+                'Australia' { $folderName = "Mega Drive (PAL)"; break }
                 default     { $folderName = "Mega Drive"; break }
             }
 
@@ -239,6 +271,7 @@ function New-SuperFamicomFolderName {
         'Japan'     { $folderName = "Super Famicom"; break }
         'USA'       { $folderName = "SNES (NTSC)"; break }
         'Europe'    { $folderName = "SNES (PAL)"; break }
+        'Australia' { $folderName = "SNES (PAL)"; break }
         default     { $folderName = "SNES"; break }
     }
 
@@ -259,21 +292,22 @@ function Get-RomFilePaths {
             "*.fds", "*.gb", "*.gbc", "*.gba", "*.gen", "*.gg", "*.nes", "*.pce", "*.sfc",
             "*.smd", "*.smc", "*.sms", "*.z64", "*.bin"
         )
-        $targetFiles = Get-ChildItem -Path $Path -Recurse -Include $filter        
-        
-        foreach ($file in $targetFiles) {
+
+        Get-ChildItem -Path $Path -Recurse -Include $filter | ForEach-Object {
+            $file = $_ | New-RomFileName
+
             if ($NoPlatform) {
                 $targetDir = $Target
             } else {
                 $folderName = New-PlatformFolder -Extension $file.Extension -BaseName $file.BaseName
                 $targetDir = Join-Path -Path $Target -ChildPath $folderName
-            }            
-                      
+            }
+
             $targetFile = Join-Path -Path ($file.BaseName | New-SubFolderName) -ChildPath $file.Name
         
             $fileMember = New-Object PSObject -Property @{
-                Dest = Join-Path -Path $targetDir -ChildPath $targetFile
-                Source = $file.FullName
+                Dest    = Join-Path -Path $targetDir -ChildPath $targetFile
+                Source  = $_.FullName
             }
         
             $files += $fileMember
