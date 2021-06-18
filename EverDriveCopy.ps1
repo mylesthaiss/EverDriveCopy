@@ -40,11 +40,14 @@ function Get-BroadcastTypeFromFileName {
     )
     
     switch -Regex ($FileName) {
-        '(\([JU145]\))'     { $broadcastType = [Broadcast]::NTSC; break }
+        '(\([JKU145]\))'    { $broadcastType = [Broadcast]::NTSC; break }
         '(\([ABCEFGIS8]\))' { $broadcastType = [Broadcast]::PAL; break }
         '(\(UK\))'          { $broadcastType = [Broadcast]::PAL; break }
         '(\(SW\))'          { $broadcastType = [Broadcast]::PAL; break }
         '(\(NL\))'          { $broadcastType = [Broadcast]::PAL; break }
+        '(\(FN\))'          { $broadcastType = [Broadcast]::PAL; break }
+        '(\(HK\))'          { $broadcastType = [Broadcast]::PAL; break }
+        '(\(GR\))'          { $broadcastType = [Broadcast]::PAL; break }
     }
 
     $broadcastType
@@ -77,9 +80,15 @@ function New-RomFileName {
         -replace '^The ','' `
         -replace ', The','' `
         -replace '\(Europe\)','(E)' `
+        -replace '\(England\)','(UK)' `
         -replace '\(USA\)','(U)' `
         -replace '\(Japan\)','(J)' `
         -replace '\(China\)','(C)' `
+        -replace '\(Hong Kong\)','(HK)' `
+        -replace '\(Netherlands\)','(NL)' `
+        -replace '\(Spain\)','(S)' `
+        -replace '\(Sweden\)','(SW)' `
+        -replace '\(Greece\)','(GR)' `
         -replace '\(Public Domain\)','(PD)' `
         -replace '\(Unlicensed\)','(Unl)'
 
@@ -160,11 +169,18 @@ function New-FamicomFolderName {
 
         default {
             switch ($FileName | Get-RegionFromFileName) {
-                'Japan'     { $folderName = "Famicom"; break }
-                'USA'       { $folderName = "NES (NTSC)"; break }
-                'Europe'    { $folderName = "NES (PAL)"; break }
-                'Australia' { $folderName = "NES (PAL)"; break }
-                default     { $folderName = "NES"; break }
+                'Japan' { 
+                    $folderName = "Famicom"
+                    break
+                }
+
+                default {
+                    switch ($FileName | Get-BroadcastTypeFromFileName) {
+                        'NTSC'  { $folderName = "NES (NTSC)"; break }
+                        'PAL'   { $folderName = "NES (PAL)"; break }
+                        default { $folderName = "NES"; break }
+                    }
+                }
             }
         }
     }
@@ -203,11 +219,18 @@ function New-MasterSystemFolderName {
     )
 
     switch ($FileName | Get-RegionFromFileName) {
-        'Japan'     { $folderName = "Mark III"; break }
-        'USA'       { $folderName = "Master System (NTSC)"; break }
-        'Europe'    { $folderName = "Master System (PAL)"; break }
-        'Australia' { $folderName = "Master System (PAL)"; break }
-        default     { $folderName = "Master System"; break }
+        'Japan' { 
+            $folderName = "Mark III"
+            break
+        }
+
+        default {
+            switch ($FolderName | Get-BroadcastTypeFromFileName) {
+                'NTSC'  { $folderName = "Master System (NTSC)"; break }
+                'PAL'   { $folderName = "Master System (PAL)"; break }
+                default { $folderName = "Master System"; break }
+            }
+        }
     }
 
     $folderName
@@ -247,11 +270,18 @@ function New-MegaDriveFolderName {
         
         default {
             switch ($FileName | Get-RegionFromFileName) {
-                'USA'       { $folderName = "Genesis"; break }
-                'Japan'     { $folderName = "Mega Drive (NTSC)"; break }
-                'Europe'    { $folderName = "Mega Drive (PAL)"; break }
-                'Australia' { $folderName = "Mega Drive (PAL)"; break }
-                default     { $folderName = "Mega Drive"; break }
+                'USA' { 
+                    $folderName = "Genesis"
+                    break 
+                }
+
+                default {
+                    switch ($FileName | Get-BroadcastTypeFromFileName) {
+                        'NTSC'  { $folderName = "Mega Drive (NTSC)"; break }
+                        'PAL'   { $folderName = "Mega Drive (PAL)"; break }
+                        default { $folderName = "Mega Drive"; break }
+                    }
+                }
             }
 
             break
@@ -268,11 +298,18 @@ function New-SuperFamicomFolderName {
     )
 
     switch ($FileName | Get-RegionFromFileName) {
-        'Japan'     { $folderName = "Super Famicom"; break }
-        'USA'       { $folderName = "SNES (NTSC)"; break }
-        'Europe'    { $folderName = "SNES (PAL)"; break }
-        'Australia' { $folderName = "SNES (PAL)"; break }
-        default     { $folderName = "SNES"; break }
+        'Japan' { 
+            $folderName = "Super Famicom"
+            break 
+        }
+
+        default {
+            switch ($FileName | Get-BroadcastTypeFromFileName) {
+                'NTSC'  { $folderName = "SNES (NTSC)"; break }
+                'PAL'   { $folderName = "SNES (PAL)"; break }
+                default { $folderName = "SNES"; break }
+            }
+        }
     }
 
     $folderName
