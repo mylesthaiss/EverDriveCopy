@@ -17,7 +17,7 @@
 param (
     # Determine folder that contains files that are to be copied
     [Parameter(Mandatory = $true)]
-    [string]$Path,
+    [string[]]$Path,
     
     # Determine destination folder
     [Parameter(Mandatory = $true)]
@@ -48,6 +48,9 @@ function Get-BroadcastTypeFromFileName {
         '(\(FN\))'          { $broadcastType = [Broadcast]::PAL; break }
         '(\(HK\))'          { $broadcastType = [Broadcast]::PAL; break }
         '(\(GR\))'          { $broadcastType = [Broadcast]::PAL; break }
+        '(\(PAL\))'         { $broadcastType = [Broadcast]::PAL; break }
+        '(\(NTSC\))'        { $broadcastType = [Broadcast]::NTSC; break }
+        '(\([JU][JU]\))'    { $broadcastType = [Broadcast]::NTSC; break }
     }
 
     $broadcastType
@@ -318,7 +321,7 @@ function New-SuperFamicomFolderName {
 function Get-RomFilePaths {
     param (
         [Parameter(Mandatory = $true)]
-        [string]$Path,
+        [string[]]$Path,
         [Parameter(Mandatory = $true)]
         [string]$Target
     )
