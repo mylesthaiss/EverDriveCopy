@@ -28,7 +28,7 @@ param (
 )
 
 enum Broadcast { NTSC; PAL }
-enum Region { Japan; USA; Europe; Australia }
+enum Region { Japan; USA; Europe; Australia; World }
 
 # ---------------------------------------------------------------------------------------
 #   FUNCTIONS
@@ -63,10 +63,12 @@ function Get-RegionFromFileName {
     )
 
     switch -Regex ($FileName) {
-        '(\([U4]\))'    { $region = [Region]::USA; break }
-        '(\([J1]\))'    { $region = [Region]::Japan; break }
-        '(\([EFGS]\))'  { $region = [Region]::Europe; break }
-        '(\(A\))'       { $region = [Region]::Australia; break }
+        '(\([U4]\))'            { $region = [Region]::USA; break }
+        '(\([J1]\))'            { $region = [Region]::Japan; break }
+        '(\([EFGS]\))'          { $region = [Region]::Europe; break }
+        '(\(A\))'               { $region = [Region]::Australia; break }
+        '(\([JUE][JUE][JUE]\))' { $region = [Region]::World; break }
+        '(\(W\))'               { $region = [Region]::World; break } 
     }
 
     $region
@@ -93,7 +95,8 @@ function New-RomFileName {
         -replace '\(Sweden\)','(SW)' `
         -replace '\(Greece\)','(GR)' `
         -replace '\(Public Domain\)','(PD)' `
-        -replace '\(Unlicensed\)','(Unl)'
+        -replace '\(Unlicensed\)','(Unl)' `
+        -replace '\(World\)','(W)'
 
     New-Object PSObject -Property @{
         BaseName    = $newBaseName
@@ -227,6 +230,11 @@ function New-MasterSystemFolderName {
             break
         }
 
+        'World' {
+            $folderName = "Master System (World)"
+            break
+        }
+
         default {
             switch ($FolderName | Get-BroadcastTypeFromFileName) {
                 'NTSC'  { $folderName = "Master System (NTSC)"; break }
@@ -276,6 +284,11 @@ function New-MegaDriveFolderName {
                 'USA' { 
                     $folderName = "Genesis"
                     break 
+                }
+
+                'World' { 
+                    $folderName = "Mega Drive (World)"
+                    break
                 }
 
                 default {
