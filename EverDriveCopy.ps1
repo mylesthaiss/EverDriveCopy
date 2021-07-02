@@ -28,7 +28,7 @@ param (
 )
 
 enum Broadcast { NTSC; PAL }
-enum Region { Japan; USA; Europe; Australia; World }
+enum Region { Japan; USA; Europe; Australia; World; USEurope }
 
 # ---------------------------------------------------------------------------------------
 #   FUNCTIONS
@@ -68,7 +68,8 @@ function Get-RegionFromFileName {
         '(\([EFGS]\))'          { $region = [Region]::Europe; break }
         '(\(A\))'               { $region = [Region]::Australia; break }
         '(\([JUE][JUE][JUE]\))' { $region = [Region]::World; break }
-        '(\(W\))'               { $region = [Region]::World; break } 
+        '(\(W\))'               { $region = [Region]::World; break }
+        '(\([UE][UE]\))'        { $region = [Region]::USEurope; break }  
     }
 
     $region
@@ -96,7 +97,9 @@ function New-RomFileName {
         -replace '\(Greece\)','(GR)' `
         -replace '\(Public Domain\)','(PD)' `
         -replace '\(Unlicensed\)','(Unl)' `
-        -replace '\(World\)','(W)'
+        -replace '\(World\)','(W)' `
+        -replace '\(USA, Europe)','(UE)' `
+        -replace '\(Europe, USA\)','(UE)'
 
     New-Object PSObject -Property @{
         BaseName    = $newBaseName
@@ -235,6 +238,11 @@ function New-MasterSystemFolderName {
             break
         }
 
+        'USEurope' {
+            $folderName = "Master System (US-Europe)"
+            break
+        }
+
         default {
             switch ($FolderName | Get-BroadcastTypeFromFileName) {
                 'NTSC'  { $folderName = "Master System (NTSC)"; break }
@@ -288,6 +296,11 @@ function New-MegaDriveFolderName {
 
                 'World' { 
                     $folderName = "Mega Drive (World)"
+                    break
+                }
+
+                'USEurope' {
+                    $folderName = "Mega Drive (US-Europe)"
                     break
                 }
 
