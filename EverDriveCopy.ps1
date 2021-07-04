@@ -28,7 +28,7 @@ param (
 )
 
 enum Broadcast { NTSC; PAL }
-enum Region { Japan; USA; Europe; Australia; World; USEurope }
+enum Region { Japan; USA; Europe; Australia; World; USEurope; JapanEurope }
 
 # ---------------------------------------------------------------------------------------
 #   FUNCTIONS
@@ -69,7 +69,8 @@ function Get-RegionFromFileName {
         '(\(A\))'               { $region = [Region]::Australia; break }
         '(\([JUE][JUE][JUE]\))' { $region = [Region]::World; break }
         '(\(W\))'               { $region = [Region]::World; break }
-        '(\([UE][UE]\))'        { $region = [Region]::USEurope; break }  
+        '(\([UE][UE]\))'        { $region = [Region]::USEurope; break }
+        '(\([JE][JE]\))'        { $region = [Region]::JapanEurope; break }
     }
 
     $region
@@ -98,8 +99,12 @@ function New-RomFileName {
         -replace '\(Public Domain\)','(PD)' `
         -replace '\(Unlicensed\)','(Unl)' `
         -replace '\(World\)','(W)' `
-        -replace '\(USA, Europe)','(UE)' `
-        -replace '\(Europe, USA\)','(UE)'
+        -replace '\(USA, Europe\)','(UE)' `
+        -replace '\(Europe, USA\)','(UE)' `
+        -replace '\(EU\)','(UE)' `
+        -replace '\(Brazil\)','(B)' `
+        -replace '\(Japan, Europe\)','(JE)' `
+        -replace '\(Europe, Japan\)','(JE)'
 
     New-Object PSObject -Property @{
         BaseName    = $newBaseName
@@ -243,8 +248,13 @@ function New-MasterSystemFolderName {
             break
         }
 
+        'JapanEurope' {
+            $folderName = "Master System (Japan-Europe)"
+            break
+        }
+
         default {
-            switch ($FolderName | Get-BroadcastTypeFromFileName) {
+            switch ($FileName | Get-BroadcastTypeFromFileName) {
                 'NTSC'  { $folderName = "Master System (NTSC)"; break }
                 'PAL'   { $folderName = "Master System (PAL)"; break }
                 default { $folderName = "Master System"; break }
@@ -304,6 +314,11 @@ function New-MegaDriveFolderName {
                     break
                 }
 
+                'JapanEurope' {
+                    $folderName = "Mega Drive (Japan-Europe)"
+                    break
+                }
+
                 default {
                     switch ($FileName | Get-BroadcastTypeFromFileName) {
                         'NTSC'  { $folderName = "Mega Drive (NTSC)"; break }
@@ -356,7 +371,7 @@ function Get-RomFilePaths {
         $files = @()
         $filter = @(
             "*.fds", "*.gb", "*.gbc", "*.gba", "*.gen", "*.gg", "*.nes", "*.pce", "*.sfc",
-            "*.smd", "*.smc", "*.sms", "*.z64", "*.bin"
+            "*.smc", "*.sms", "*.z64", "*.bin"
         )
 
         Get-ChildItem -Path $Path -Recurse -Include $filter | ForEach-Object {
