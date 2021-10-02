@@ -82,7 +82,6 @@ function New-RomFileName {
         [PSCustomObject]$File
     )
 
-    $newExtension = $File.Extension.ToLower()
     $newBaseName = $File.BaseName.Trim() `
         -replace '^The ','' `
         -replace ', The','' `
@@ -106,11 +105,33 @@ function New-RomFileName {
         -replace '\(Japan, Europe\)','(JE)' `
         -replace '\(Europe, Japan\)','(JE)'
 
+    $newExtension = $File.Extension | New-FileExtension -BaseFile $newBaseName
+
     New-Object PSObject -Property @{
         BaseName    = $newBaseName
         Extension   = $newExtension
         Name        = "{0}{1}" -f $newBaseName, $newExtension
     }
+}
+
+function New-FileExtension {
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [string]$FileExtension,
+        [Parameter(Mandatory = $true)]
+        [string]$BaseFile
+    )
+
+    switch ($FileExtension.ToLower()) {
+        ".bin"  { $newFileExtension = $BaseFile | New-MegaDriveFileExt -FileExt $FileExtension; break }
+        ".md"   { $newFileExtension = $BaseFile | New-MegaDrvieFileExt -FileExt $FileExtension; break }
+        ".gen"  { $newFileExtension = $BaseFile | New-MegaDrvieFileExt -FileExt $FileExtension; break }
+        ".smc"  { $newFileExtension = $BaseFile | New-SuperFamicomFileExt -FileExt $FileExtension; break }
+        ".sfc"  { $newFileExtension = $BaseFile | New-SuperFamicomFileExt -FileExt $FileExtension; break }
+        default { $newFileExtension = $FileExtension.ToLower(); break }
+    }
+
+    $newFileExtension
 }
 
 function New-SubFolderName {
@@ -151,7 +172,7 @@ function New-PlatformFolder {
         ".gg"       { $folderName = "Game Gear"; break }
         ".smd"      { $folderName = $BaseName | New-MegaDriveFolderName; break }
         ".gen"      { $folderName = $BaseName | New-MegaDriveFolderName; break }
-        ".bin"      { $folderName = $BaseName | New-MegaDriveFolderName; break }        
+        ".bin"      { $folderName = $BaseName | New-MegaDriveFolderName; break }
         ".nes"      { $folderName = $BaseName | New-FamicomFolderName; break }
         ".pce"      { $folderName = $BaseName | New-PCEngineFolderName; break }
         ".sms"      { $folderName = $BaseName | New-MasterSystemFolderName; break }
@@ -357,6 +378,46 @@ function New-SuperFamicomFolderName {
     }
 
     $folderName
+}
+
+function New-MegaDriveFileExt {
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        $FileName,
+        [Parameter(Mandatory = $true)]
+        $FileExt
+    )
+
+    switch ($FileName | Get-RegionFromFileName) {
+        'Japan'         { $fileExt = ".bin"; break }
+        'JapanEurope'   { $fileExt = ".bin"; break }
+        'USA'           { $fileExt = ".gen"; break }
+        'USEurope'      { $fileExt = ".gen"; break }
+        'World'         { $fileExt = ".gen"; break }
+        'Europe'        { $fileExt = ".md"; break }
+        default         { $fileExt = $FileExt.ToLower(); break }
+    }
+
+    $fileExt
+}
+
+function New-SuperFamicomFileExt {
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        $FileName,
+        [Parameter(Mandatory = $true)]
+        $FileExt
+    )
+
+    switch ($FileName | Get-RegionFromFileName) {
+        'Japan'     { $fileExt = ".sfc"; break }
+        'USA'       { $fileExt = ".smc"; break }
+        'World'     { $fileExt = ".smc"; break }
+        'Europe'    { $fileExt = ".smc"; break }
+        default     { $fileExt = $FileExt.ToLower(); break }
+    }
+
+    $fileExt
 }
 
 function Get-RomFilePaths {
