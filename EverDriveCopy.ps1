@@ -122,13 +122,27 @@ function New-FileExtension {
         [string]$BaseFile
     )
 
-    switch ($FileExtension.ToLower()) {
-        ".bin"  { $newFileExtension = $BaseFile | New-MegaDriveFileExt -FileExt $FileExtension; break }
-        ".md"   { $newFileExtension = $BaseFile | New-MegaDrvieFileExt -FileExt $FileExtension; break }
-        ".gen"  { $newFileExtension = $BaseFile | New-MegaDrvieFileExt -FileExt $FileExtension; break }
-        ".smc"  { $newFileExtension = $BaseFile | New-SuperFamicomFileExt -FileExt $FileExtension; break }
-        ".sfc"  { $newFileExtension = $BaseFile | New-SuperFamicomFileExt -FileExt $FileExtension; break }
-        default { $newFileExtension = $FileExtension.ToLower(); break }
+    switch -Regex ($BaseFile) {
+        '32X' {
+            $newFileExtension = ".32x"
+            break
+        }
+
+        '(\(SGX\))' {
+            $newFileExtension = ".sgx"
+            break
+        }
+
+        default {
+            switch ($FileExtension.ToLower()) {
+                ".bin"  { $newFileExtension = $BaseFile | New-MegaDriveFileExt -FileExt $FileExtension; break }
+                ".md"   { $newFileExtension = $BaseFile | New-MegaDrvieFileExt -FileExt $FileExtension; break }
+                ".gen"  { $newFileExtension = $BaseFile | New-MegaDrvieFileExt -FileExt $FileExtension; break }
+                ".smc"  { $newFileExtension = $BaseFile | New-SuperFamicomFileExt -FileExt $FileExtension; break }
+                ".sfc"  { $newFileExtension = $BaseFile | New-SuperFamicomFileExt -FileExt $FileExtension; break }
+                default { $newFileExtension = $FileExtension.ToLower(); break }
+            }
+        }
     }
 
     $newFileExtension
@@ -170,11 +184,13 @@ function New-PlatformFolder {
         ".gbc"      { $folderName = "Game Boy Color"; break }
         ".gba"      { $folderName = "Game Boy Advance"; break }
         ".gg"       { $folderName = "Game Gear"; break }
-        ".smd"      { $folderName = $BaseName | New-MegaDriveFolderName; break }
-        ".gen"      { $folderName = $BaseName | New-MegaDriveFolderName; break }
+        ".32x"      { $folderName = "32X"; break }
+        ".gen"      { $folderName = "Genesis"; break }
+        ".md"       { $folderName = "Mega Drive (PAL)"; break }
         ".bin"      { $folderName = $BaseName | New-MegaDriveFolderName; break }
         ".nes"      { $folderName = $BaseName | New-FamicomFolderName; break }
         ".pce"      { $folderName = $BaseName | New-PCEngineFolderName; break }
+        ".sgx"      { $folderName = "SuperGrafx"; break }
         ".sms"      { $folderName = $BaseName | New-MasterSystemFolderName; break }
         ".sfc"      { $folderName = "Super Famicom"; break }
         ".smc"      { $folderName = $BaseName | New-SuperFamicomFolderName; break }
@@ -320,23 +336,18 @@ function New-MegaDriveFolderName {
         
         default {
             switch ($FileName | Get-RegionFromFileName) {
-                'USA' { 
-                    $folderName = "Genesis"
-                    break 
-                }
-
                 'World' { 
                     $folderName = "Mega Drive (World)"
                     break
                 }
 
                 'USEurope' {
-                    $folderName = "Mega Drive (US-Europe)"
+                    $folderName = "Genesis"
                     break
                 }
 
                 'JapanEurope' {
-                    $folderName = "Mega Drive (Japan-Europe)"
+                    $folderName = "Mega Drive (NTSC)"
                     break
                 }
 
@@ -393,7 +404,7 @@ function New-MegaDriveFileExt {
         'JapanEurope'   { $fileExt = ".bin"; break }
         'USA'           { $fileExt = ".gen"; break }
         'USEurope'      { $fileExt = ".gen"; break }
-        'World'         { $fileExt = ".gen"; break }
+        'World'         { $fileExt = ".bin"; break }
         'Europe'        { $fileExt = ".md"; break }
         default         { $fileExt = $FileExt.ToLower(); break }
     }
@@ -432,7 +443,7 @@ function Get-RomFilePaths {
         $files = @()
         $filter = @(
             "*.fds", "*.gb", "*.gbc", "*.gba", "*.gen", "*.gg", "*.nes", "*.pce", "*.sfc",
-            "*.smc", "*.sms", "*.z64", "*.bin"
+            "*.smc", "*.sms", "*.z64", "*.bin", "*.md", "*.32x"
         )
 
         Get-ChildItem -Path $Path -Recurse -Include $filter | ForEach-Object {
