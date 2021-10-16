@@ -30,6 +30,11 @@ param (
 enum Broadcast { NTSC; PAL }
 enum Region { Japan; USA; Europe; Australia; World; USEurope; JapanEurope }
 
+$excludedGroupDirs = @(
+    "_Beta", "_Demos", "_BIOS", "_Public Domain", "_Unlicensed", "SuperGrafx",
+    "32X", "PlayChoice-10", "Nintendo VS System"
+)
+
 # ---------------------------------------------------------------------------------------
 #   FUNCTIONS
 # ---------------------------------------------------------------------------------------
@@ -155,9 +160,6 @@ function New-SubFolderName {
     )
 
     switch -Regex ($Name) {
-        '(\(BIOS\))'    { $subFolder = '_BIOS'; break }
-        '(\(PD\))'      { $subFolder = '_Public Domain'; break }
-        '(\(Unl\))'     { $subFolder = '_Unlicensed'; break }
         '^[a-dA-D]'     { $subFolder = "[A-D]"; break }
         '^[e-hE-H]'     { $subFolder = "[E-H]"; break }
         '^[i-lI-L]'     { $subFolder = "[I-L]"; break }
@@ -452,12 +454,30 @@ function Get-RomFilePaths {
             if ($NoPlatform) {
                 $targetDir = $Target
             } else {
-                $folderName = New-PlatformFolder -Extension $file.Extension -BaseName $file.BaseName
+                switch -Regex ($file.BaseName) {
+                    '(\(Beta\))'        { $folderName = "_Beta"; break }
+                    '(\(Proto\))'       { $folderName = "_Beta"; break }
+                    '(\(Prototype\))'   { $folderName = "_Beta"; break }
+                    'BIOS'              { $folderName = "_BIOS"; break }
+                    '(\(Demo\))'        { $folderName = "_Demos"; break }
+                    '(\(PD\))'          { $folderName = "_Public Domain"; break }
+                    '(\(Unl\))'         { $folderName = "_Unlicensed"; break }
+                    
+                    default {
+                        $folderName = New-PlatformFolder -Extension $file.Extension -BaseName $file.BaseName
+                        break
+                    }
+                }
+
                 $targetDir = Join-Path -Path $Target -ChildPath $folderName
             }
 
-            $targetFile = Join-Path -Path ($file.BaseName | New-SubFolderName) -ChildPath $file.Name
-        
+            if ($excludedGroupDirs -notcontains $folderName) {
+                $targetFile = Join-Path -Path ($file.BaseName | New-SubFolderName) -ChildPath $file.Name
+            } else {
+                $targetFile = $file.Name
+            }
+
             $fileMember = New-Object PSObject -Property @{
                 Dest    = Join-Path -Path $targetDir -ChildPath $targetFile
                 Source  = $_.FullName
