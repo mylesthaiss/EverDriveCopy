@@ -28,11 +28,11 @@ param (
 )
 
 enum Broadcast { NTSC; PAL }
-enum Region { Japan; USA; Europe; Australia; World; USEurope; JapanEurope }
+enum Region { Japan; USA; Europe; Australia; World; USEurope; JapanEurope; Korea }
 
 $excludedGroupDirs = @(
-    "_Beta", "_Demos", "_BIOS", "_Public Domain", "_Unlicensed", "SuperGrafx",
-    "32X", "PlayChoice-10", "Nintendo VS System"
+    "_Betas", "_Demos", "_BIOS", "_Public Domain", "_Unlicensed", "_Prototypes"
+    "_Trainers", "_Hacks", "SuperGrafx", "32X", "PlayChoice-10", "Nintendo VS System"
 )
 
 # ---------------------------------------------------------------------------------------
@@ -56,6 +56,7 @@ function Get-BroadcastTypeFromFileName {
         '(\(PAL\))'         { $broadcastType = [Broadcast]::PAL; break }
         '(\(NTSC\))'        { $broadcastType = [Broadcast]::NTSC; break }
         '(\([JU][JU]\))'    { $broadcastType = [Broadcast]::NTSC; break }
+        '(\(K\))'           { $broadcastType = [Broadcast]::NTSC; break }
     }
 
     $broadcastType
@@ -76,6 +77,7 @@ function Get-RegionFromFileName {
         '(\(W\))'               { $region = [Region]::World; break }
         '(\([UE][UE]\))'        { $region = [Region]::USEurope; break }
         '(\([JE][JE]\))'        { $region = [Region]::JapanEurope; break }
+        '(\(K\))'               { $region = [Region]::Korea; break }
     }
 
     $region
@@ -108,7 +110,8 @@ function New-RomFileName {
         -replace '\(EU\)','(UE)' `
         -replace '\(Brazil\)','(B)' `
         -replace '\(Japan, Europe\)','(JE)' `
-        -replace '\(Europe, Japan\)','(JE)'
+        -replace '\(Europe, Japan\)','(JE)' `
+        -replace '\(Korea\)','(K)'
 
     $newExtension = $File.Extension | New-FileExtension -BaseFile $newBaseName
 
@@ -181,6 +184,7 @@ function New-PlatformFolder {
     )
 
     switch ($Extension) {
+        ".col"      { $folderName = "ColecoVision"; break }
         ".fds"      { $folderName = "Famicom Disk System"; break }
         ".gb"       { $folderName = "Game Boy"; break }
         ".gbc"      { $folderName = "Game Boy Color"; break }
@@ -190,6 +194,7 @@ function New-PlatformFolder {
         ".gen"      { $folderName = "Genesis"; break }
         ".md"       { $folderName = "Mega Drive (PAL)"; break }
         ".bin"      { $folderName = $BaseName | New-MegaDriveFolderName; break }
+        ".neo"      { $folderName = "Neo Geo"; break }
         ".nes"      { $folderName = $BaseName | New-FamicomFolderName; break }
         ".pce"      { $folderName = $BaseName | New-PCEngineFolderName; break }
         ".sgx"      { $folderName = "SuperGrafx"; break }
@@ -445,7 +450,7 @@ function Get-RomFilePaths {
         $files = @()
         $filter = @(
             "*.fds", "*.gb", "*.gbc", "*.gba", "*.gen", "*.gg", "*.nes", "*.pce", "*.sfc",
-            "*.smc", "*.sms", "*.z64", "*.bin", "*.md", "*.32x"
+            "*.smc", "*.sms", "*.z64", "*.bin", "*.md", "*.32x", "*.neo", "*.col"
         )
 
         Get-ChildItem -Path $Path -Recurse -Include $filter | ForEach-Object {
@@ -455,13 +460,17 @@ function Get-RomFilePaths {
                 $targetDir = $Target
             } else {
                 switch -Regex ($file.BaseName) {
-                    '(\(Beta\))'        { $folderName = "_Beta"; break }
-                    '(\(Proto\))'       { $folderName = "_Beta"; break }
-                    '(\(Prototype\))'   { $folderName = "_Beta"; break }
+                    '(\(Beta\))'        { $folderName = "_Betas"; break }
+                    '(\(Pre-release\))' { $folderName = "_Betas"; break }
+                    '(\(Proto\))'       { $folderName = "_Prototypes"; break }
+                    '(\(Prototype\))'   { $folderName = "_Prototypes"; break }
                     'BIOS'              { $folderName = "_BIOS"; break }
                     '(\(Demo\))'        { $folderName = "_Demos"; break }
                     '(\(PD\))'          { $folderName = "_Public Domain"; break }
                     '(\(Unl\))'         { $folderName = "_Unlicensed"; break }
+                    '(\[t[0-9]\])'      { $folderName = "_Trainers"; break }
+                    '(\[h[0-9]\])'      { $folderName = "_Hacks"; break }
+                    '(\(Hack\))'        { $folderName = "_Hacks"; break }
                     
                     default {
                         $folderName = New-PlatformFolder -Extension $file.Extension -BaseName $file.BaseName
