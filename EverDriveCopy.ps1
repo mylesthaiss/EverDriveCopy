@@ -29,13 +29,14 @@ param (
 
 enum Broadcast { NTSC; PAL }
 enum Region {
-    Japan; USA; Europe; Australia; World; USEurope; JapanEurope; Korea; JapanUS;
-    Brazil; USEuropeKorea
+    Japan; USA; Europe; Australia; World; USEurope; JapanEurope; Korea; JapanUS; Brazil;
+    USEuropeKorea; USKorea; USAus; JapanKorea; EuropeBrazil; EuropeKorea; JapanUSKorea;
+    JapanEuropeKorea
 }
 
 $excludedGroupDirs = @(
     "4 Betas", "4 Demos", "4 BIOS", "4 Betas & Prototypes", "4 Bootlegs", "3 Satellaview",
-    "3 SuFami Turbo", "3 NSS", "3 SuperGrafx", "3 32X", "3 PlayChoice-10", "3 Nintendo VS System",
+    "3 SuFami Turbo", "3 NSS", "3 SuperGrafx", "3 Sega 32X", "3 PlayChoice-10", "3 Nintendo VS System",
     "5 Tools & Tests", "3 SARA Super Chip"
 )
 
@@ -95,6 +96,12 @@ function Get-RegionFromFileName {
         '(\([JU][JU]\))'        { $region = [Region]::JapanUS; break }
         '(\(B\))'               { $region = [Region]::Brazil; break }
         '(\([UEK][UEK][UEK]\))' { $region = [Region]::USEuropeKorea; break }
+        '(\([UK][UK]\))'        { $region = [Region]::USKorea; break }
+        '(\([UA][UA]\))'        { $region = [Region]::USAus; break }
+        '(\([JK][JK]\))'        { $region = [Region]::JapanKorea; break }
+        '(\([EB][EB]\))'        { $region = [Region]::EuropeBrazil; break }
+        '(\([EK][EK]\))'        { $region = [Region]::EuropeKorea; break }
+        '(\([JEK][JEK][JEK]\))' { $region = [Region]::JapanEuropeKorea; break }
     }
 
     $region
@@ -140,7 +147,15 @@ function New-RomFileName {
         -replace '\(USA, Japan\)','(JU)' `
         -replace '\(France\)','(F)' `
         -replace '\(US\)','(U)' `
-        -replace '\(USA, Europe, Korea\)','(UEK)'
+        -replace '\(USA, Europe, Korea\)','(UEK)' `
+        -replace '\(Japan, Korea\)','(JK)' `
+        -replace '\(USA, Korea\)', '(UK)' `
+        -replace '\(USA, Australia\)', '(UA)' `
+        -replace '\(Europe, Brazil\)', '(EB)' `
+        -replace '\(Brazil, Europe\)', '(EB)' `
+        -replace '\(Europe, Korea\)', '(EK)' `
+        -replace '\(Japan, Europe, Korea\)', '(JEK)' `
+        -replace '\(Mexico\)', '(M)'
 
     $newExtension = $File.Extension | New-FileExtension -BaseFile $newBaseName
 
@@ -206,6 +221,28 @@ function New-SubFolderName {
     $subFolder
 }
 
+function New-LanguageSubFolderName {
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [string]$Name
+    )
+
+    switch -Regex ($Name) {
+        '(\[T[\-\+]Chi.*\])'    { $folderName = 'Chinese'; break }
+        '(\[T[\-\+]Eng.*\])'    { $folderName = 'English'; break }
+        '(\[T[\-\+]Bra.*\])'    { $folderName = 'Brazil'; break }
+        '(\[T[\-\+]Fre.*\])'    { $folderName = 'French'; break }
+        '(\[T[\-\+]Ger.*\])'    { $folderName = 'German'; break }
+        '(\[T[\-\+]Gre.*\])'    { $folderName = 'Greek'; break }
+        '(\[T[\-\+]Pol.*\])'    { $folderName = 'Polish'; break }
+        '(\[T[\-\+]Rus.*\])'    { $folderName = 'Russian'; break }
+        '(\[T[\-\+]Spa.*\])'    { $folderName = 'Spanish'; break }
+        default                 { $folderName = 'Other'; break }
+    }
+
+    $folderName
+}
+
 function New-PlatformFolder {
     param (
         [Parameter(Mandatory = $true)]
@@ -218,24 +255,15 @@ function New-PlatformFolder {
         ".a26"      { $folderName = $BaseName | New-BroadcastFormatFolder; break }
         ".col"      { $folderName = $BaseName | New-BroadcastFormatFolder; break }
         ".fds"      { $folderName = "1 Famicom Disk System"; break }
-        ".gb"       { $folderName = "1 Game Boy"; break }
-        ".gbc"      { $folderName = "2 Game Boy Color"; break }
-        ".gba"      { $folderName = $BaseName | New-RegionFolder; break }
-        ".gg"       { $folderName = $BaseName | New-RegionFolder; break }
-        ".32x"      { $folderName = "3 32X"; break }
-        ".gen"      { $folderName = "2 Genesis"; break }
-        ".md"       { $folderName = "2 PAL Mega Drive"; break }
-        ".bin"      { $folderName = $BaseName | New-MegaDriveFolderName; break }
+        ".32x"      { $folderName = "3 Sega 32X"; break }
         ".neo"      { $folderName = $BaseName | New-NeoGeoFolderName; break }
         ".nes"      { $folderName = $BaseName | New-FamicomFolderName; break }
         ".pce"      { $folderName = $BaseName | New-PCEngineFolderName; break }
         ".sc"       { $folderName = "3 SARA Super Chip"; break }
         ".sgx"      { $folderName = "3 SuperGrafx"; break }
-        ".sms"      { $folderName = $BaseName | New-MasterSystemFolderName; break }
         ".sfc"      { $folderName = $BaseName | New-SuperFamicomFolderName; break }
         ".smc"      { $folderName = $BaseName | New-SuperFamicomFolderName; break }
-        ".z64"      { $folderName = $BaseName | New-Nintendo64FolderName; break }
-        default     { $folderName = "3 Other"; break }
+        default     { $folderName = $BaseName | New-RegionFolder; break }
     }
 
     $folderName
@@ -303,45 +331,6 @@ function New-PCEngineFolderName {
     $folderName
 }
 
-function New-MasterSystemFolderName {
-    param (
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-        [string]$FileName
-    )
-
-    switch ($FileName | Get-RegionFromFileName) {
-        'Japan' { 
-            $folderName = "1 Mark III"
-            break
-        }
-
-        'World' {
-            $folderName = "2 NTSC Master System"
-            break
-        }
-
-        'USEurope' {
-            $folderName = "2 NTSC Master System"
-            break
-        }
-
-        'JapanEurope' {
-            $folderName = "1 Mark III"
-            break
-        }
-
-        default {
-            switch ($FileName | Get-BroadcastTypeFromFileName) {
-                'NTSC'  { $folderName = "2 NTSC Master System"; break }
-                'PAL'   { $folderName = "3 PAL Master System"; break }
-                default { $folderName = "3 Master System"; break }
-            }
-        }
-    }
-
-    $folderName
-}
-
 function New-NeoGeoFolderName {
     param (
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
@@ -352,44 +341,6 @@ function New-NeoGeoFolderName {
         '(\(MVS\))' { $folderName = '2 Neo Geo MVS'; break }
         '(\(AES\))' { $folderName = '3 Neo Geo AES'; break }
         default     { $folderName = '1 Neo Geo'; break }
-    }
-
-    $folderName
-}
-
-function New-Nintendo64FolderName {
-    param (
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-        [string]$FileName
-    )
-
-    switch ($FileName | Get-BroadcastTypeFromFileName) {
-        'NTSC'      { $folderName = "1 NTSC Nintendo 64"; break }
-        'PAL'       { $folderName = "2 PAL Nintendo 64"; break }
-        default     { $folderName = "2 Nintendo 64"; break }
-    }
-
-    $folderName
-}
-
-function New-MegaDriveFolderName {
-    param (
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-        [string]$FileName
-    )
-
-    switch -Regex ($FileName) {
-        'BIOS' { 
-            $folderName = "4 BIOS"
-            break 
-        }
-
-        '32X' { 
-            $folderName = "3 Sega 32X"
-            break
-        }
-
-        default { $folderName = $FileName | New-RegionFolder }
     }
 
     $folderName
@@ -429,14 +380,21 @@ function New-MegaDriveFileExt {
     )
 
     switch ($FileName | Get-RegionFromFileName) {
-        'Japan'         { $fileExt = ".bin"; break }
-        'JapanEurope'   { $fileExt = ".bin"; break }
-        'USA'           { $fileExt = ".gen"; break }
-        'USEurope'      { $fileExt = ".gen"; break }
-        'USEuropeKorea' { $fileExt = ".gen"; break }
-        'World'         { $fileExt = ".bin"; break }
-        'Europe'        { $fileExt = ".md"; break }
-        default         { $fileExt = $FileExt.ToLower(); break }
+        'Japan'             { $fileExt = ".bin"; break }
+        'JapanEurope'       { $fileExt = ".bin"; break }
+        'JapanUS'           { $fileExt = ".bin"; break }
+        'JapanKorea'        { $fileExt = ".bin"; break }
+        'JapanEuropeKorea'  { $fileExt = ".bin"; break }
+        'USA'               { $fileExt = ".gen"; break }
+        'USEurope'          { $fileExt = ".gen"; break }
+        'USEuropeKorea'     { $fileExt = ".gen"; break }
+        'USKorea'           { $fileExt = ".gen"; break }
+        'USAus'             { $fileExt = ".gen"; break }
+        'World'             { $fileExt = ".bin"; break }
+        'Europe'            { $fileExt = ".md"; break }
+        'EuropeBrazil'      { $fileExt = ".md"; break }
+        'EuropeKorea'       { $fileExt = ".md"; break }
+        default             { $fileExt = $FileExt.ToLower(); break }
     }
 
     $fileExt
@@ -451,11 +409,12 @@ function New-SuperFamicomFileExt {
     )
 
     switch ($FileName | Get-RegionFromFileName) {
-        'Japan'     { $fileExt = ".sfc"; break }
-        'USA'       { $fileExt = ".smc"; break }
-        'World'     { $fileExt = ".smc"; break }
-        'Europe'    { $fileExt = ".smc"; break }
-        default     { $fileExt = $FileExt.ToLower(); break }
+        'Japan'         { $fileExt = ".sfc"; break }
+        'JapanKorea'    { $fileExt = ".sfc"; break }
+        'USA'           { $fileExt = ".smc"; break }
+        'World'         { $fileExt = ".smc"; break }
+        'Europe'        { $fileExt = ".smc"; break }
+        default         { $fileExt = $FileExt.ToLower(); break }
     }
 
     $fileExt
@@ -468,17 +427,21 @@ function New-RegionFolder {
     )
 
     switch ($file.BaseName | Get-RegionFromFileName) {
-        'USA'           { $folderName = "1 USA"; break }
-        'USEurope'      { $folderName = "1 USA"; break }
-        'JapanUS'       { $folderName = "1 USA"; break }
-        'World'         { $folderName = "1 USA"; break }
-        'USEuropeKorea' { $foldername = "1 USA"; break }
-        'Japan'         { $folderName = "2 Japan"; break }
-        'JapanEurope'   { $folderName = "2 Japan"; break }
-        'Europe'        { $folderName = "3 Europe"; break }
-        'Brazil'        { $folderName = "3 Brazil"; break }
-        'Korea'         { $folderName = "3 Korea"; break }
-        default         { $folderName = "3 Other"; break }
+        'USA'               { $folderName = "1 USA"; break }
+        'USEurope'          { $folderName = "1 USA"; break }
+        'JapanUS'           { $folderName = "1 USA"; break }
+        'World'             { $folderName = "1 USA"; break }
+        'USEuropeKorea'     { $folderName = "1 USA"; break }
+        'USAus'             { $folderName = "1 USA"; break }
+        'USKorea'           { $folderName = "1 USA"; break }
+        'Europe'            { $folderName = "2 Europe"; break }
+        'EuropeBrazil'      { $folderName = "2 Europe"; break }
+        'EuropeKorea'       { $folderName = "2 Europe"; break }
+        'Japan'             { $folderName = "2 Japan"; break }
+        'JapanEurope'       { $folderName = "2 Japan"; break }
+        'JapanKorea'        { $folderName = "2 Japan"; break }
+        'JapanEuropeKorea'  { $folderName = "2 Japan"; break }
+        default             { $folderName = "2 Other Regions"; break }
     }
 
     $folderName
@@ -530,8 +493,7 @@ function Get-RomFilePaths {
                 '(\(Bootleg .*\))'      { $folderName = "4 Bootlegs"; break }
                 '(\[p[0-9].*\])'        { $folderName = "4 Bootlegs"; break }
                 'BIOS'                  { $folderName = "4 BIOS"; break }
-                '(\[T\+.*\])'           { $folderName = "4 Translations"; break }
-                '(\[T\-.*\])'           { $folderName = "4 Translations"; break }
+                '(\[T[\-\+].*\])'       { $folderName = "4 Translations"; break }
                 '(\(Demo\))'            { $folderName = "4 Demos"; break }
                 '(\(PD\))'              { $folderName = "4 Public Domain"; break }
                 '(\(Unl\))'             { $folderName = "4 Unlicensed"; break }
@@ -554,7 +516,13 @@ function Get-RomFilePaths {
             }
 
             if ($excludedGroupDirs -notcontains $folderName) {
-                $targetFile = Join-Path -Path ($file.BaseName | New-SubFolderName) -ChildPath $file.Name
+                if ($folderName -eq '4 Translations') {
+                    $subFolder = $file.BaseName | New-LanguageSubFolderName
+                } else {
+                    $subFolder = $file.BaseName | New-SubFolderName
+                }
+
+                $targetFile = Join-Path -Path $subFolder -ChildPath $file.Name
             } else {
                 $targetFile = $file.Name
             }
