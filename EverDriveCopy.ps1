@@ -35,7 +35,7 @@ enum Region {
 }
 
 $excludedGroupDirs = @(
-    "4 Betas", "4 Demos", "4 BIOS", "4 Betas & Prototypes", "4 Bootlegs", "3 Satellaview",
+    "4 Betas", "4 Demos", "5 BIOS", "4 Betas & Prototypes", "4 Bootlegs", "3 Satellaview",
     "3 SuFami Turbo", "3 NSS", "3 SuperGrafx", "3 Sega 32X", "3 PlayChoice-10", "3 Nintendo VS System",
     "5 Tools & Tests", "3 SARA Super Chip"
 )
@@ -86,7 +86,9 @@ function Get-RegionFromFileName {
     switch -Regex ($FileName) {
         '(\([U4]\))'            { $region = [Region]::USA; break }
         '(\([J1]\))'            { $region = [Region]::Japan; break }
-        '(\([EFGS]\))'          { $region = [Region]::Europe; break }
+        '(\([EFGSI]\))'         { $region = [Region]::Europe; break }
+        '(\(SW\))'              { $region = [Region]::Europe; break }
+        '(\(GR\))'              { $region = [Region]::Europe; break }
         '(\(A\))'               { $region = [Region]::Australia; break }
         '(\([JUE][JUE][JUE]\))' { $region = [Region]::World; break }
         '(\(W\))'               { $region = [Region]::World; break }
@@ -117,6 +119,7 @@ function New-RomFileName {
         -replace "`'",'' `
         -replace '^The ','' `
         -replace ', The','' `
+        -replace ' \[[CM]\]','' `
         -replace '\(Proto\)','(Prototype)' `
         -replace '\(Australia\)','(A)' `
         -replace '\(Canada\)','(CN)' `
@@ -131,6 +134,7 @@ function New-RomFileName {
         -replace '\(Netherlands\)','(NL)' `
         -replace '\(Spain\)','(S)' `
         -replace '\(Sweden\)','(SW)' `
+        -replace '\(Sw\)','(SW)' `
         -replace '\(Germany\)','(G)' `
         -replace '\(Greece\)','(GR)' `
         -replace '\(Public Domain\)','(PD)' `
@@ -149,13 +153,17 @@ function New-RomFileName {
         -replace '\(US\)','(U)' `
         -replace '\(USA, Europe, Korea\)','(UEK)' `
         -replace '\(Japan, Korea\)','(JK)' `
-        -replace '\(USA, Korea\)', '(UK)' `
-        -replace '\(USA, Australia\)', '(UA)' `
-        -replace '\(Europe, Brazil\)', '(EB)' `
-        -replace '\(Brazil, Europe\)', '(EB)' `
-        -replace '\(Europe, Korea\)', '(EK)' `
-        -replace '\(Japan, Europe, Korea\)', '(JEK)' `
-        -replace '\(Mexico\)', '(M)'
+        -replace '\(USA, Korea\)','(UK)' `
+        -replace '\(USA, Australia\)','(UA)' `
+        -replace '\(Europe, Brazil\)','(EB)' `
+        -replace '\(Brazil, Europe\)','(EB)' `
+        -replace '\(Europe, Korea\)','(EK)' `
+        -replace '\(Japan, Europe, Korea\)','(JEK)' `
+        -replace '\(Mexico\)','(M)' `
+        -replace '\]\[','] [' `
+        -replace '\)\(',') (' `
+        -replace '\)\[',') [' `
+        -replace '\]\(','] ('
 
     $newExtension = $File.Extension | New-FileExtension -BaseFile $newBaseName
 
@@ -228,15 +236,26 @@ function New-LanguageSubFolderName {
     )
 
     switch -Regex ($Name) {
+        '(\[T[\-\+]Cat.*\])'    { $folderName = 'Catalan'; break }
         '(\[T[\-\+]Chi.*\])'    { $folderName = 'Chinese'; break }
         '(\[T[\-\+]Eng.*\])'    { $folderName = 'English'; break }
         '(\[T[\-\+]Bra.*\])'    { $folderName = 'Brazil'; break }
+        '(\[T[\-\+]Dan.*\])'    { $folderName = 'Danish'; break }
+        '(\[T[\-\+]Dut.*\])'    { $folderName = 'Dutch'; break }
+        '(\[T[\-\+]Fin.*\])'    { $folderName = 'Finnish'; break }
         '(\[T[\-\+]Fre.*\])'    { $folderName = 'French'; break }
         '(\[T[\-\+]Ger.*\])'    { $folderName = 'German'; break }
         '(\[T[\-\+]Gre.*\])'    { $folderName = 'Greek'; break }
+        '(\[T[\-\+]Hun.*\])'    { $folderName = 'Hungarian'; break }
+        '(\[T[\-\+]Ita.*\])'    { $folderName = 'Italian'; break }
+        '(\[T[\-\+]Kor.*\])'    { $folderName = 'Korean'; break }
+        '(\[T[\-\+]Nor.*\])'    { $folderName = 'Norwegian'; break }
         '(\[T[\-\+]Pol.*\])'    { $folderName = 'Polish'; break }
+        '(\[T[\-\+]Por.*\])'    { $folderName = 'Portuguese'; break }
         '(\[T[\-\+]Rus.*\])'    { $folderName = 'Russian'; break }
         '(\[T[\-\+]Spa.*\])'    { $folderName = 'Spanish'; break }
+        '(\[T[\-\+]Swe.*\])'    { $folderName = 'Swedish'; break }
+        '(\[T[\-\+]Thai.*\])'   { $folderName = 'Thai'; break }
         default                 { $folderName = 'Other'; break }
     }
 
@@ -254,7 +273,7 @@ function New-PlatformFolder {
     switch ($Extension) {
         ".a26"      { $folderName = $BaseName | New-BroadcastFormatFolder; break }
         ".col"      { $folderName = $BaseName | New-BroadcastFormatFolder; break }
-        ".fds"      { $folderName = "1 Famicom Disk System"; break }
+        ".fds"      { $folderName = "3 Famicom Disk System"; break }
         ".32x"      { $folderName = "3 Sega 32X"; break }
         ".neo"      { $folderName = $BaseName | New-NeoGeoFolderName; break }
         ".nes"      { $folderName = $BaseName | New-FamicomFolderName; break }
@@ -287,20 +306,8 @@ function New-FamicomFolderName {
         }
 
         default {
-            switch ($FileName | Get-RegionFromFileName) {
-                'Japan' { 
-                    $folderName = "1 Famicom"
-                    break
-                }
-
-                default {
-                    switch ($FileName | Get-BroadcastTypeFromFileName) {
-                        'NTSC'  { $folderName = "2 NTSC NES"; break }
-                        'PAL'   { $folderName = "2 PAL NES"; break }
-                        default { $folderName = "2 NES"; break }
-                    }
-                }
-            }
+            $folderName = $FileName | New-RegionFolder
+            break
         }
     }
 
@@ -320,11 +327,8 @@ function New-PCEngineFolderName {
         }
 
         default {
-            switch ($FileName | Get-RegionFromFileName) {
-                'USA'       { $folderName = "2 TurboGrafx-16"; break }
-                'Europe'    { $folderName = "3 TurboGrafx"; break }
-                default     { $folderName = "1 PC Engine"; break }
-            }
+            $folderName = $FileName | New-RegionFolder
+            break
         }
     }
 
@@ -357,14 +361,10 @@ function New-SuperFamicomFolderName {
         '(\(BS\))'      { $folderName = "3 Satellaview"; break }
         '^BS '          { $folderName = "3 Satellaview"; break }
         '(\(ST\))'      { $folderName = "3 SuFami Turbo"; break }
-        '(\([J1]\))'    { $folderName = "1 Super Famicom"; break }
 
         default {
-            switch ($FileName | Get-BroadcastTypeFromFileName) {
-                'NTSC'  { $folderName = "2 NTSC SNES"; break }
-                'PAL'   { $folderName = "2 PAL SNES"; break }
-                default { $folderName = "3 SNES"; break }
-            }
+            $folderName = $FileName | New-RegionFolder
+            break
         }
     }
 
@@ -482,6 +482,11 @@ function Get-RomFilePaths {
             $file = $_ | New-RomFileName
 
             switch -Regex ($file.BaseName) {
+                'BIOS'                  { $folderName = "5 BIOS"; break }
+                '^ Test'                { $folderName = "5 Tools & Tests"; break }
+                '(\(PD\))'              { $folderName = "4 Public Domain"; break }
+                '(\(Unl\))'             { $folderName = "4 Unlicensed"; break }
+                '(\(Sachen\))'          { $folderName = "4 Unlicensed"; break }
                 '(\(Beta\))'            { $folderName = "4 Prototypes & Betas"; break }
                 '(\(Beta .*\))'         { $folderName = "4 Prototypes & Betas"; break }
                 '(\(Beta\-.*\))'        { $folderName = "4 Prototypes & Betas"; break }
@@ -492,18 +497,14 @@ function Get-RomFilePaths {
                 '(\(Bootleg\))'         { $folderName = "4 Bootlegs"; break }
                 '(\(Bootleg .*\))'      { $folderName = "4 Bootlegs"; break }
                 '(\[p[0-9].*\])'        { $folderName = "4 Bootlegs"; break }
-                'BIOS'                  { $folderName = "4 BIOS"; break }
                 '(\[T[\-\+].*\])'       { $folderName = "4 Translations"; break }
                 '(\(Demo\))'            { $folderName = "4 Demos"; break }
-                '(\(PD\))'              { $folderName = "4 Public Domain"; break }
-                '(\(Unl\))'             { $folderName = "4 Unlicensed"; break }
                 '(\[t[0-9].*\])'        { $folderName = "4 Hacks & Trainers"; break }
                 '(\[h[0-9].*\])'        { $folderName = "4 Hacks & Trainers"; break }
                 '(\(Hack\))'            { $folderName = "4 Hacks & Trainers"; break }
                 '(\(Hack .*\))'         { $folderName = "4 Hacks & Trainers"; break }
                 '(\(.* Hack\))'         { $folderName = "4 Hacks & Trainers"; break }
-                '^ Test'                { $folderName = "5 Tools & Tests"; break }
-                
+
                 default {
                     if ($NoPlatform) {
                         $folderName = $file.BaseName | New-RegionFolder
