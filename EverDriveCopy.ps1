@@ -31,13 +31,13 @@ enum Broadcast { NTSC; PAL }
 enum Region {
     Japan; USA; Europe; Australia; World; USEurope; JapanEurope; Korea; JapanUS; Brazil;
     USEuropeKorea; USKorea; USAus; JapanKorea; EuropeBrazil; EuropeKorea; JapanUSKorea;
-    JapanEuropeKorea
+    JapanBrazil; JapanEuropeKorea; JapanEuropeBrazil; JapanUSBrazil; USEuropeBrazil; USBrazil
 }
 
 $excludedGroupDirs = @(
     "4 Betas", "4 Demos", "5 BIOS", "4 Betas & Prototypes", "4 Bootlegs", "3 Satellaview",
     "3 SuFami Turbo", "3 NSS", "3 SuperGrafx", "3 Sega 32X", "3 PlayChoice-10", "3 Nintendo VS System",
-    "5 Tools & Tests", "3 SARA Super Chip"
+    "5 Tools & Tests", "3 SARA Super Chip", "2 Other Regions", "2 Korea", "3 AES", "3 MVS"
 )
 
 # ---------------------------------------------------------------------------------------
@@ -100,10 +100,15 @@ function Get-RegionFromFileName {
         '(\([UEK][UEK][UEK]\))' { $region = [Region]::USEuropeKorea; break }
         '(\([UK][UK]\))'        { $region = [Region]::USKorea; break }
         '(\([UA][UA]\))'        { $region = [Region]::USAus; break }
+        '(\([UB][UB]\))'        { $region = [Region]::USBrazil; break }
         '(\([JK][JK]\))'        { $region = [Region]::JapanKorea; break }
+        '(\([JB][JB]\))'        { $region = [Region]::JapanBrail; break }
         '(\([EB][EB]\))'        { $region = [Region]::EuropeBrazil; break }
         '(\([EK][EK]\))'        { $region = [Region]::EuropeKorea; break }
+        '(\([UEB][UEB][UEB]\))' { $region = [Region]::USEuropeBrazil; break }
         '(\([JEK][JEK][JEK]\))' { $region = [Region]::JapanEuropeKorea; break }
+        '(\([JEB][JEB][JEB]\))' { $region = [Region]::JapanEuropeBrazil; break }
+        '(\([JUB][JUB][JUB]\))' { $region = [Region]::JapanUSBrazil; break }
     }
 
     $region
@@ -120,6 +125,8 @@ function New-RomFileName {
         -replace '^The ','' `
         -replace ', The','' `
         -replace ' \[[CM]\]','' `
+        -replace '\(Unenc\)','(Unencrypted)' `
+        -replace '\(bootleg\)','(Bootleg)' `
         -replace '\(Proto\)','(Prototype)' `
         -replace '\(Australia\)','(A)' `
         -replace '\(Canada\)','(CN)' `
@@ -140,11 +147,15 @@ function New-RomFileName {
         -replace '\(Public Domain\)','(PD)' `
         -replace '\(Unlicensed\)','(Unl)' `
         -replace '\(World\)','(W)' `
+        -replace '\(USA, Brazil\)','(UB)' `
         -replace '\(USA, Europe\)','(UE)' `
         -replace '\(Europe, USA\)','(UE)' `
         -replace '\(EU\)','(UE)' `
         -replace '\(Brazil\)','(B)' `
+        -replace '\(Japan, Brazil\)','(JB)' `
         -replace '\(Japan, Europe\)','(JE)' `
+        -replace '\(Japan, Europe, Brazil\)','(JEB)' `
+        -replace '\(Japan, USA, Brazil\)','(JUB)' `
         -replace '\(Europe, Japan\)','(JE)' `
         -replace '\(Korea\)','(K)' `
         -replace '\(Japan, USA\)','(JU)' `
@@ -152,6 +163,7 @@ function New-RomFileName {
         -replace '\(France\)','(F)' `
         -replace '\(US\)','(U)' `
         -replace '\(USA, Europe, Korea\)','(UEK)' `
+        -replace '\(USA, Europe, Brazil\)','(UEB)' `
         -replace '\(Japan, Korea\)','(JK)' `
         -replace '\(USA, Korea\)','(UK)' `
         -replace '\(USA, Australia\)','(UA)' `
@@ -239,7 +251,7 @@ function New-LanguageSubFolderName {
         '(\[T[\-\+]Cat.*\])'    { $folderName = 'Catalan'; break }
         '(\[T[\-\+]Chi.*\])'    { $folderName = 'Chinese'; break }
         '(\[T[\-\+]Eng.*\])'    { $folderName = 'English'; break }
-        '(\[T[\-\+]Bra.*\])'    { $folderName = 'Brazil'; break }
+        '(\[T[\-\+]Bra.*\])'    { $folderName = 'Brazilian Portuguese'; break }
         '(\[T[\-\+]Dan.*\])'    { $folderName = 'Danish'; break }
         '(\[T[\-\+]Dut.*\])'    { $folderName = 'Dutch'; break }
         '(\[T[\-\+]Fin.*\])'    { $folderName = 'Finnish'; break }
@@ -342,9 +354,13 @@ function New-NeoGeoFolderName {
     )
 
     switch -Regex ($FileName) {
-        '(\(MVS\))' { $folderName = '2 Neo Geo MVS'; break }
-        '(\(AES\))' { $folderName = '3 Neo Geo AES'; break }
-        default     { $folderName = '1 Neo Geo'; break }
+        '(\(U\))'   { $folderName = '2 USA'; break }
+        '(\(J\))'   { $folderName = '2 Japan'; break }
+        '(\(E\))'   { $folderName = '2 Europe'; break }
+        '(\(K\))'   { $folderName = '2 Korea'; break }
+        '(\(MVS\))' { $folderName = '3 MVS'; break }
+        '(\(AES\))' { $folderName = '3 AES'; break }
+        default     { $folderName = '1 World'; break }
     }
 
     $folderName
@@ -433,14 +449,19 @@ function New-RegionFolder {
         'World'             { $folderName = "1 USA"; break }
         'USEuropeKorea'     { $folderName = "1 USA"; break }
         'USAus'             { $folderName = "1 USA"; break }
+        'USBrazil'          { $folderName = "1 USA"; break }
         'USKorea'           { $folderName = "1 USA"; break }
+        'USEuropeBrazil'    { $folderName = "1 USA"; break }
         'Europe'            { $folderName = "2 Europe"; break }
         'EuropeBrazil'      { $folderName = "2 Europe"; break }
         'EuropeKorea'       { $folderName = "2 Europe"; break }
         'Japan'             { $folderName = "2 Japan"; break }
+        'JapanBrazil'       { $folderName = "2 Japan"; break }
         'JapanEurope'       { $folderName = "2 Japan"; break }
         'JapanKorea'        { $folderName = "2 Japan"; break }
         'JapanEuropeKorea'  { $folderName = "2 Japan"; break }
+        'JapanEuropeBrazil' { $folderName = "2 Japan"; break }
+        'JapanUSBrazil'     { $folderName = "2 Japan"; break }
         default             { $folderName = "2 Other Regions"; break }
     }
 
@@ -485,6 +506,9 @@ function Get-RomFilePaths {
                 'BIOS'                  { $folderName = "5 BIOS"; break }
                 '^ Test'                { $folderName = "5 Tools & Tests"; break }
                 '(\(PD\))'              { $folderName = "4 Public Domain"; break }
+                '(\(Bootleg\))'         { $folderName = "4 Bootlegs"; break }
+                '(\(Bootleg .*\))'      { $folderName = "4 Bootlegs"; break }
+                '(\[p[0-9].*\])'        { $folderName = "4 Bootlegs"; break }
                 '(\(Unl\))'             { $folderName = "4 Unlicensed"; break }
                 '(\(Sachen\))'          { $folderName = "4 Unlicensed"; break }
                 '(\(Beta\))'            { $folderName = "4 Prototypes & Betas"; break }
@@ -494,16 +518,15 @@ function Get-RomFilePaths {
                 '(\(Proto\))'           { $folderName = "4 Prototypes & Betas"; break }
                 '(\(Prototype\))'       { $folderName = "4 Prototypes & Betas"; break }
                 '(\(Prototype [0-9]\))' { $folderName = "4 Prototypes & Betas"; break }
-                '(\(Bootleg\))'         { $folderName = "4 Bootlegs"; break }
-                '(\(Bootleg .*\))'      { $folderName = "4 Bootlegs"; break }
-                '(\[p[0-9].*\])'        { $folderName = "4 Bootlegs"; break }
                 '(\[T[\-\+].*\])'       { $folderName = "4 Translations"; break }
                 '(\(Demo\))'            { $folderName = "4 Demos"; break }
+                ' Demo$'                { $folderName = "4 Demos"; break }
                 '(\[t[0-9].*\])'        { $folderName = "4 Hacks & Trainers"; break }
                 '(\[h[0-9].*\])'        { $folderName = "4 Hacks & Trainers"; break }
                 '(\(Hack\))'            { $folderName = "4 Hacks & Trainers"; break }
                 '(\(Hack .*\))'         { $folderName = "4 Hacks & Trainers"; break }
                 '(\(.* Hack\))'         { $folderName = "4 Hacks & Trainers"; break }
+                ' Patched$'             { $folderName = "4 Hacks & Trainers"; break }
 
                 default {
                     if ($NoPlatform) {
