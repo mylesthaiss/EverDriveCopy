@@ -34,12 +34,6 @@ enum Region {
     JapanBrazil; JapanEuropeKorea; JapanEuropeBrazil; JapanUSBrazil; USEuropeBrazil; USBrazil
 }
 
-$excludedGroupDirs = @(
-    "4 Betas", "4 Demos", "5 BIOS", "4 Betas & Prototypes", "4 Bootlegs", "3 Satellaview",
-    "3 SuFami Turbo", "3 NSS", "3 SuperGrafx", "3 Sega 32X", "3 PlayChoice-10", "3 Nintendo VS System",
-    "5 Tools & Tests", "3 SARA Super Chip", "2 Other Regions", "2 Korea", "3 AES", "3 MVS"
-)
-
 # ---------------------------------------------------------------------------------------
 #   FUNCTIONS
 # ---------------------------------------------------------------------------------------
@@ -66,6 +60,7 @@ function Get-BroadcastTypeFromFileName {
         '(\(NTSC\))'        { $broadcastType = [Broadcast]::NTSC; break }
         '(\([JU][JU]\))'    { $broadcastType = [Broadcast]::NTSC; break }
         '(\(K\))'           { $broadcastType = [Broadcast]::NTSC; break }
+        '(\(CN\))'          { $broadcastType = [Broadcast]::NTSC; break }
         '(\(FC\))'          { $broadcastType = [Broadcast]::NTSC; break }
         '(\(R\))'           { $broadcastType = [Broadcast]::PAL; break }
         '(\(W\))'           { $broadcastType = [Broadcast]::NTSC; break }
@@ -112,6 +107,32 @@ function Get-RegionFromFileName {
     }
 
     $region
+}
+
+function Join-PlatformPaths {
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [string]$Platform,
+        [Parameter(Mandatory = $true)]
+        [string]$SubFolder
+    )
+
+    if ($NoPlatform) {
+        $SubFolder
+    } else {
+        Join-Path -Path $Platform -ChildPath $SubFolder
+    }
+}
+
+function New-FolderName {
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [string]$Name,
+        [int16]$Index = 1
+    )
+
+    $folderName = "{0} {1}" -f ([string]$Index).PadLeft(2,'0'), $Name
+    $folderName
 }
 
 function New-RomFileName {
@@ -248,9 +269,9 @@ function New-LanguageSubFolderName {
     )
 
     switch -Regex ($Name) {
-        '(\[T[\-\+]Cat.*\])'    { $folderName = 'Catalan'; break }
+        '([\[ ]T[\-\+]Cat.*\])' { $folderName = 'Catalan'; break }
         '(\[T[\-\+]Chi.*\])'    { $folderName = 'Chinese'; break }
-        '(\[T[\-\+]Eng.*\])'    { $folderName = 'English'; break }
+        '([\[ ]T[\-\+]Eng.*\])' { $folderName = 'English'; break }
         '(\[T[\-\+]Bra.*\])'    { $folderName = 'Brazilian Portuguese'; break }
         '(\[T[\-\+]Dan.*\])'    { $folderName = 'Danish'; break }
         '(\[T[\-\+]Dut.*\])'    { $folderName = 'Dutch'; break }
@@ -283,21 +304,191 @@ function New-PlatformFolder {
     )
 
     switch ($Extension) {
-        ".a26"      { $folderName = $BaseName | New-BroadcastFormatFolder; break }
-        ".col"      { $folderName = $BaseName | New-BroadcastFormatFolder; break }
-        ".fds"      { $folderName = "3 Famicom Disk System"; break }
-        ".32x"      { $folderName = "3 Sega 32X"; break }
-        ".neo"      { $folderName = $BaseName | New-NeoGeoFolderName; break }
-        ".nes"      { $folderName = $BaseName | New-FamicomFolderName; break }
-        ".pce"      { $folderName = $BaseName | New-PCEngineFolderName; break }
-        ".sc"       { $folderName = "3 SARA Super Chip"; break }
-        ".sgx"      { $folderName = "3 SuperGrafx"; break }
-        ".sfc"      { $folderName = $BaseName | New-SuperFamicomFolderName; break }
-        ".smc"      { $folderName = $BaseName | New-SuperFamicomFolderName; break }
-        default     { $folderName = $BaseName | New-RegionFolder; break }
+        ".sfc"  { $_ = ".smc" }
+        ".md"   { $_ = ".gen" }
+        ".bin"  { $_ = ".gen" }
+        ".gbc"  { $_ = ".gb" }
+
+        ".a26" {
+            $folderName = $BaseName | New-PlatformColourFormatFolderStrut -Platform "Atari 2600" -SubIndex 4
+            break
+        }
+
+        ".sc" {
+            $folderName = "Atari 2600" | Join-PlatformPaths -SubFolder ("SARA Super Chip" | New-FolderName -Index 3)
+            break
+        }
+
+        ".a52" {
+            $platform = "Atari 5200"
+
+            if ($BaseName -like "*(XL Conversion)*") {
+                $folderName = $platform | Join-PlatformPaths -SubFolder ("Atari XL Conversions" | New-FolderName -Index 3)
+            } else {
+                $folderName = $BaseName | New-PlatformColourFormatFolderStrut -Platform $plaform -SubIndex 4
+            }
+        }
+
+        ".a78" {
+            $folderName = $BaseName | New-PlatformColourFormatFolderStrut -Platform "Atari 7800" -SubIndex 3
+            break
+        }
+
+        ".j64" {
+            $folderName = $BaseName | New-PlatformRegionFolderStrut -Platform "Atari Jaguar" -SubIndex 4
+            break
+        }
+
+        ".col" {
+            $folderName = $BaseName | New-PlatformColourFormatFolderStrut -Platform "ColecoVision"
+            break
+        }
+
+        ".nes" {
+            $folderName = $BaseName | New-FamicomFolderName
+            break
+        }
+
+        ".fds" {
+            $subFolder = Join-Path -Path ("Famicom Disk System" | New-FolderName -Index 4) -ChildPath ($BaseName | New-SubFolderName)
+            $folderName = "NES" | Join-PlatformPaths -SubFolder $subFolder
+            break
+        }
+
+        ".sms" {
+            $folderName = $BaseName | New-PlatformRegionFolderStrut -Platform "Master System" -SubIndex 4
+            break
+        }
+
+        ".gg" {
+            $folderName = $BaseName | New-PlatformRegionFolderStrut -Platform "Game Gear" -SubIndex 4
+            break
+        }
+
+        ".gen" {
+            $folderName = $BaseName | New-PlatformRegionFolderStrut -Platform "Mega Drive" -SubIndex 5
+            break
+        }
+
+        ".32x" {
+            $folderName = "Mega Drive" | Join-PlatformPaths -SubFolder ("Sega 32X" | New-FolderName -Index 4)
+            break
+        }
+
+        ".neo" {
+            $folderName = $BaseName | New-NeoGeoFolderName
+            break
+        }
+
+        ".smc" {
+            $folderName = $BaseName | New-SuperFamicomFolderName
+            break
+        }
+
+        ".crt" {
+            $platform = "Commodore 64" | Join-PlatformPaths -SubFolder ("Cartridge" | New-FolderName -Index 1)
+            $folderName = Join-Path -Path $platform -ChildPath ($BaseName | New-SubFolderName)
+            break
+        }
+
+        ".d64" {
+            $platform = "Commodore 64" | Join-PlatformPaths -SubFolder ("Disk" | New-FolderName -Index 2)
+            $folderName = Join-Path -Path $platform -ChildPath ($BaseName | New-SubFolderName)
+            break
+        }
+
+        ".crt" {
+            $platform = "Commodore 64" | Join-PlatformPaths -SubFolder ("Tape" | New-FolderName -Index 3)
+            $folderName = Join-Path -Path $platform -ChildPath ($BaseName | New-SubFolderName)
+            break
+        }
+
+        ".ssd" {
+            $folderName = Join-Path -Path "BBC Micro" -ChildPath ($BaseName | New-SubFolderName)
+            break
+        }
+
+        ".adf" {
+            $folderName = "Acorn Archimedes"
+            break
+        }
+
+        ".gb" {
+            $folderName = $BaseName | New-PlatformRegionFolderStrut -Platform "Game Boy"
+            break
+        }
+
+        ".gba" {
+            $folderName = $BaseName | New-PlatformRegionFolderStrut -Platform "Game Boy Advance"
+            break
+        }
+
+        ".pce" {
+            $folderName = $BaseName | New-PlatformRegionFolderStrut -Platform "PC Engine" -SubIndex 4
+            break
+        }
+
+        ".sgx" {
+            $folderName = "PC Engine" | Join-PlatformPaths -SubFolder ("SuperGrafx" | New-FolderName -Index 3)
+            break
+        }
+
+        ".z64" {
+            $folderName = $BaseName | New-PlatformRegionFolderStrut -Platform "Nintendo 64" -SubIndex 4
+            break
+        }
+
+        default {
+            $folderName = $BaseName | New-RegionFolder
+            break
+        }
     }
 
     $folderName
+}
+
+function New-PlatformRegionFolderStrut {
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [string]$FileName,
+        [Parameter(Mandatory = $true)]
+        [string]$Platform,
+        [int]$SubIndex = 3
+    )
+
+    $subFolder = $FileName | New-CategorySubFolder -Index $SubIndex
+
+    if ($null -eq $subFolder) {
+        $subFolder = Join-Path ($FileName | New-RegionFolder) -ChildPath ($FileName | New-SubFolderName)
+    }
+
+    if ($NoPlatform) {
+        $subFolder
+    } else {
+        Join-Path -Path $Platform -ChildPath $subFolder
+    }
+}
+
+function New-PlatformColourFormatFolderStrut {
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [string]$FileName,
+        [Parameter(Mandatory = $true)]
+        [string]$Platform,
+        [int16]$SubIndex = 3
+    )
+
+    $subFolder = $FileName | New-CategorySubFolder -Index $SubIndex
+
+    if ($null -eq $subFolder) {
+        $subFolder = Join-Path ($FileName | New-BroadcastFormatFolder) -ChildPath ($FileName | New-SubFolderName)
+    }
+
+    if ($NoPlatform) {
+        $subFolder
+    } else {
+        Join-Path -Path $Platform -ChildPath $subFolder
+    }
 }
 
 function New-FamicomFolderName {
@@ -306,45 +497,32 @@ function New-FamicomFolderName {
         [string]$FileName
     )
 
-    switch -Regex ($FileName) {
-        '(\(PC10\))' { 
-            $folderName = "3 PlayChoice-10"
-            break
-        }
+    $subFolder = $FileName | New-CategorySubFolder -Index 7
 
-        '(\(VS\))' { 
-            $folderName = "3 Nintendo VS System"
-            break
-        }
+    if ($null -eq $subFolder) {
+        switch -Regex ($FileName) {
+            '(\(VS\))' {
+                $subFolder = "Nintendo VS System" | New-FolderName -Index 5
+                break
+            }
 
-        default {
-            $folderName = $FileName | New-RegionFolder
-            break
-        }
-    }
+            '(\(PC10\))' {
+                $subFolder = "PlayChoice-10" | New-FolderName -Index 6
+                break
+            }
 
-    $folderName
-}
-
-function New-PCEngineFolderName {
-    param (
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-        [string]$FileName
-    )
-
-    switch -Regex ($FileName) {
-        '(\(SGX\))' { 
-            $folderName = "3 SuperGrafx"
-            break
-        }
-
-        default {
-            $folderName = $FileName | New-RegionFolder
-            break
+            default {
+                $subFolder = Join-Path -Path ($FileName | New-RegionFolder) -ChildPath ($FileName | New-SubFolderName)
+                break
+            }
         }
     }
 
-    $folderName
+    if ($NoPlatform) {
+        $subFolder
+    } else {
+        Join-Path -Path "NES" -ChildPath $subFolder
+    }
 }
 
 function New-NeoGeoFolderName {
@@ -354,13 +532,13 @@ function New-NeoGeoFolderName {
     )
 
     switch -Regex ($FileName) {
-        '(\(U\))'   { $folderName = '2 USA'; break }
-        '(\(J\))'   { $folderName = '2 Japan'; break }
-        '(\(E\))'   { $folderName = '2 Europe'; break }
-        '(\(K\))'   { $folderName = '2 Korea'; break }
-        '(\(MVS\))' { $folderName = '3 MVS'; break }
-        '(\(AES\))' { $folderName = '3 AES'; break }
-        default     { $folderName = '1 World'; break }
+        '(\(U\))'   { $folderName = 'USA' | New-FolderName -Index 2; break }
+        '(\(J\))'   { $folderName = 'Japan' | New-FolderName -Index 2; break }
+        '(\(E\))'   { $folderName = 'Europe' | New-FolderName -Index 2; break }
+        '(\(K\))'   { $folderName = 'Korea' | New-FolderName -Index 2; break }
+        '(\(MVS\))' { $folderName = 'MVS' | New-FolderName -Index 3; break }
+        '(\(AES\))' { $folderName = 'AES' | New-FolderName -Index 3; break }
+        default     { $folderName = 'World' | New-FolderName -Index 1; break }
     }
 
     $folderName
@@ -372,19 +550,23 @@ function New-SuperFamicomFolderName {
         [string]$FileName
     )
 
-    switch -regex ($FileName) {
-        '(\(NSS\))'     { $folderName = "3 NSS"; break }
-        '(\(BS\))'      { $folderName = "3 Satellaview"; break }
-        '^BS '          { $folderName = "3 Satellaview"; break }
-        '(\(ST\))'      { $folderName = "3 SuFami Turbo"; break }
+    $subFolder = $FileName | New-CategorySubFolder
 
-        default {
-            $folderName = $FileName | New-RegionFolder
-            break
+    if ($null -ne $subFolder) {
+        switch -regex ($FileName) {
+            '(\(NSS\))' { $subFolder = "NSS" | New-FolderName -Index 4; break }
+            '(\(BS\))'  { $subFolder = "Satellaview" | New-FolderName -Index 5; break }
+            '^BS '      { $subFolder = "Satellaview" | New-FolderName -Index 5; break }
+            '(\(ST\))'  { $subFolder = "SuFami Turbo" | New-FolderName -Index 6; break }
+            default     { $subFolder = $FileName | New-RegionFolder; break }
         }
     }
 
-    $folderName
+    if ($NoPlatform) {
+        $subFolder
+    } else {
+        Join-Path "SNES" -ChildPath $subFolder
+    }
 }
 
 function New-MegaDriveFileExt {
@@ -443,26 +625,109 @@ function New-RegionFolder {
     )
 
     switch ($file.BaseName | Get-RegionFromFileName) {
-        'USA'               { $folderName = "1 USA"; break }
-        'USEurope'          { $folderName = "1 USA"; break }
-        'JapanUS'           { $folderName = "1 USA"; break }
-        'World'             { $folderName = "1 USA"; break }
-        'USEuropeKorea'     { $folderName = "1 USA"; break }
-        'USAus'             { $folderName = "1 USA"; break }
-        'USBrazil'          { $folderName = "1 USA"; break }
-        'USKorea'           { $folderName = "1 USA"; break }
-        'USEuropeBrazil'    { $folderName = "1 USA"; break }
-        'Europe'            { $folderName = "2 Europe"; break }
-        'EuropeBrazil'      { $folderName = "2 Europe"; break }
-        'EuropeKorea'       { $folderName = "2 Europe"; break }
-        'Japan'             { $folderName = "2 Japan"; break }
-        'JapanBrazil'       { $folderName = "2 Japan"; break }
-        'JapanEurope'       { $folderName = "2 Japan"; break }
-        'JapanKorea'        { $folderName = "2 Japan"; break }
-        'JapanEuropeKorea'  { $folderName = "2 Japan"; break }
-        'JapanEuropeBrazil' { $folderName = "2 Japan"; break }
-        'JapanUSBrazil'     { $folderName = "2 Japan"; break }
-        default             { $folderName = "2 Other Regions"; break }
+        'USEurope'          { $_ = "USA" }
+        'JapanUS'           { $_ = "USA" }
+        'World'             { $_ = "USA" }
+        'USEuropeKorea'     { $_ = "USA" }
+        'USAus'             { $_ = "USA" }
+        'USBrazil'          { $_ = "USA" }
+        'USKorea'           { $_ = "USA" }
+        'USEuropeBrazil'    { $_ = "USA" }
+        'JapanBrazil'       { $_ = "Japan" }
+        'JapanEurope'       { $_ = "Japan" }
+        'JapanKorea'        { $_ = "Japan" }
+        'JapanEuropeKorea'  { $_ = "Japan" }
+        'JapanEuropeBrazil' { $_ = "Japan" }
+        'JapanUSBrazil'     { $_ = "Japan" }
+        'EuropeBrazil'      { $_ = "Europe" }
+        'EuropeKorea'       { $_ = "Europe" }
+        'USA'               { $folderName = "USA" | New-FolderName -Index 1; break }
+        'Japan'             { $folderName = "Japan" | New-FolderName -Index 2; break }
+        'Europe'            { $folderName = "Europe" | New-FolderName -Index 3; break }
+        default             { $folderName = "Other Regions" | New-FolderName -Index 3; break }
+    }
+
+    $folderName
+}
+
+function New-CategorySubFolder {
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        $FileName,
+        [int]$Index = 3
+    )
+
+    $folderName = $null
+    
+    switch -regex ($FileName) {
+        '(\(Beta\))'            { $_ = "#Prototype" }
+        '(\(Beta .*\))'         { $_ = "#Prototype" }
+        '(\(Beta\-.*\))'        { $_ = "#Prototype" }
+        '(\(Pre-release\))'     { $_ = "#Prototype" }
+        '(\(Proto\))'           { $_ = "#Prototype" }
+        '(\(Prototype\))'       { $_ = "#Prototype" }
+        '(\(Prototype [0-9]\))' { $_ = "#Prototype" }
+
+        '#Prototype' {
+            $folderName = "Prototypes & Betas" | New-FolderName -Index $Index
+            $folderName = Join-Path -Path $folderName -ChildPath ($FileName | New-SubFolderName)
+            break
+        }
+
+        '(\[T[\-\+].*\])' {
+            $folderName = "Translations" | New-FolderName -Index ($Index + 1)
+            $folderName = Join-Path -Path $folderName -ChildPath ($FileName | New-LanguageSubFolderName)
+            break
+        }
+
+        '(\[t[0-9].*\])'    { $_ = "#Hack" }
+        '(\[h[0-9].*\])'    { $_ = "#Hack" }
+        '(\(Hack\))'        { $_ = "#Hack" }
+        '(\(Hack .*\))'     { $_ = "#Hack" }
+        '(\(.* Hack\))'     { $_ = "#Hack" }
+        ' Patched$'         { $_ = "#Hack" }
+
+        '#Hack' {
+            $folderName = "Hacks & Trainers" | New-FolderName -Index ($Index + 2)
+            $folderName = Join-Path -Path $folderName -ChildPath ($FileName | New-SubFolderName)
+            break
+        }
+
+        '(\(Bootleg\))'     { $_ = "#Bootleg" }
+        '(\(Bootleg .*\))'  { $_ = "#Bootleg" }
+        '(\[p[0-9].*\])'    { $_ = "#Bootleg" }
+
+        '#Bootleg' {
+            $folderName = "Bootlegs" | New-FolderName -Index ($Index + 3)
+            break
+        }
+
+        '(\(Unl\))'     { $_ = "#Unlicensed" }
+        '(\(Sachen\))'  { $_ = "#Unlicensed" }
+
+        '#Unlicensed' {
+            $folderName = "Unlicensed" | New-FolderName -Index ($Index + 4)
+            $folderName = Join-Path -Path $folderName -ChildPath ($FileName | New-SubFolderName)
+            break
+        }
+
+        '(\(PD\))' {
+            $folderName = "Public Domain" | New-FolderName -Index ($Index + 5)
+            $folderName = Join-Path -Path $folderName -ChildPath ($FileName | New-SubFolderName)
+            break
+        }
+
+        '(\(Demo\))'    { $_ = "#Demo" }
+        ' Demo$'        { $_ = "#Demo" }
+        '(\(Sample\))'  { $_ = "#Demo" }
+
+        '#Demo' {
+            $folderName = "Demos & Samples" | New-FolderName -Index ($Index + 6)
+            break
+        }
+
+        '^ Test'    { $folderName = "Tools & Tests" | New-FolderName -Index ($Index + 7); break }
+        'BIOS'      { $folderName = "BIOS" | New-FolderName -Index ($Index + 8); break }
     }
 
     $folderName
@@ -475,9 +740,9 @@ function New-BroadcastFormatFolder {
     )
 
     switch ($FileName | Get-BroadcastTypeFromFileName) {
-        'NTSC'  { $folderName = "1 NTSC"; break }
-        'PAL'   { $folderName = "2 PAL"; break }
-        default { $folderName = "3 Unknown"; break }
+        'NTSC'  { $folderName = "NTSC" | New-FolderName -Index 1; break }
+        'PAL'   { $folderName = "PAL" | New-FolderName -Index 2; break }
+        default { $folderName = "Unknown" | New-FolderName -Index 3; break }
     }
 
     $folderName
@@ -496,65 +761,19 @@ function Get-RomFilePaths {
         $filter = @(
             "*.a26", "*.col", "*.fds", "*.gb", "*.gbc", "*.gba", "*.gen", "*.gg", "*.nes",
             "*.pce", "*.sfc", "*.smc", "*.sms", "*.z64", "*.bin", "*.md", "*.32x", "*.neo",
-            "*.sgx", "*.sc"
+            "*.sgx", "*.sc", "*.lnx", "*.j64", "*.jag", "*.crt", "*.d64", "*.tap", "*.adf",
+            "*.ssd", "*.a52", "*.a78"
         )
 
         Get-ChildItem -Path $Path -Recurse -Include $filter | ForEach-Object {
             $file = $_ | New-RomFileName
 
-            switch -Regex ($file.BaseName) {
-                'BIOS'                  { $folderName = "5 BIOS"; break }
-                '^ Test'                { $folderName = "5 Tools & Tests"; break }
-                '(\(PD\))'              { $folderName = "4 Public Domain"; break }
-                '(\(Bootleg\))'         { $folderName = "4 Bootlegs"; break }
-                '(\(Bootleg .*\))'      { $folderName = "4 Bootlegs"; break }
-                '(\[p[0-9].*\])'        { $folderName = "4 Bootlegs"; break }
-                '(\(Unl\))'             { $folderName = "4 Unlicensed"; break }
-                '(\(Sachen\))'          { $folderName = "4 Unlicensed"; break }
-                '(\(Beta\))'            { $folderName = "4 Prototypes & Betas"; break }
-                '(\(Beta .*\))'         { $folderName = "4 Prototypes & Betas"; break }
-                '(\(Beta\-.*\))'        { $folderName = "4 Prototypes & Betas"; break }
-                '(\(Pre-release\))'     { $folderName = "4 Prototypes & Betas"; break }
-                '(\(Proto\))'           { $folderName = "4 Prototypes & Betas"; break }
-                '(\(Prototype\))'       { $folderName = "4 Prototypes & Betas"; break }
-                '(\(Prototype [0-9]\))' { $folderName = "4 Prototypes & Betas"; break }
-                '(\[T[\-\+].*\])'       { $folderName = "4 Translations"; break }
-                '(\(Demo\))'            { $folderName = "4 Demos"; break }
-                ' Demo$'                { $folderName = "4 Demos"; break }
-                '(\[t[0-9].*\])'        { $folderName = "4 Hacks & Trainers"; break }
-                '(\[h[0-9].*\])'        { $folderName = "4 Hacks & Trainers"; break }
-                '(\(Hack\))'            { $folderName = "4 Hacks & Trainers"; break }
-                '(\(Hack .*\))'         { $folderName = "4 Hacks & Trainers"; break }
-                '(\(.* Hack\))'         { $folderName = "4 Hacks & Trainers"; break }
-                ' Patched$'             { $folderName = "4 Hacks & Trainers"; break }
+            $folderName = New-PlatformFolder -Extension $file.Extension -BaseName $file.BaseName
 
-                default {
-                    if ($NoPlatform) {
-                        $folderName = $file.BaseName | New-RegionFolder
-                    } else {
-                        $folderName = New-PlatformFolder -Extension $file.Extension -BaseName $file.BaseName
-                    }
-                    
-                    break
-                }
-            }
-
-            if ($excludedGroupDirs -notcontains $folderName) {
-                if ($folderName -eq '4 Translations') {
-                    $subFolder = $file.BaseName | New-LanguageSubFolderName
-                } else {
-                    $subFolder = $file.BaseName | New-SubFolderName
-                }
-
-                $targetFile = Join-Path -Path $subFolder -ChildPath $file.Name
-            } else {
-                $targetFile = $file.Name
-            }
-
-            $targetDir = Join-Path -Path $Target -ChildPath $folderName
+            $targetDir = Join-Path -Path $TargetPath -ChildPath $folderName
 
             $fileMember = New-Object PSObject -Property @{
-                Dest    = Join-Path -Path $targetDir -ChildPath $targetFile
+                Dest    = Join-Path -Path $targetDir -ChildPath $file.Name
                 Source  = $_.FullName
             }
 
