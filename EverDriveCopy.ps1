@@ -308,6 +308,7 @@ function New-PlatformFolder {
         ".md"   { $_ = ".gen" }
         ".bin"  { $_ = ".gen" }
         ".gbc"  { $_ = ".gb" }
+        ".ngc"  { $_ = ".ngp" }
 
         ".a26" {
             $folderName = $BaseName | New-PlatformColourFormatFolderStrut -Platform "Atari 2600" -SubIndex 4
@@ -325,7 +326,7 @@ function New-PlatformFolder {
             if ($BaseName -like "*(XL Conversion)*") {
                 $folderName = $platform | Join-PlatformPaths -SubFolder ("Atari XL Conversions" | New-FolderName -Index 3)
             } else {
-                $folderName = $BaseName | New-PlatformColourFormatFolderStrut -Platform $plaform -SubIndex 4
+                $folderName = $BaseName | New-PlatformColourFormatFolderStrut -Platform $platform -SubIndex 4
             }
         }
 
@@ -438,6 +439,11 @@ function New-PlatformFolder {
             break
         }
 
+        ".ngp" {
+            $folderName = $BaseName | New-PlatformRegionFolderStrut -Platform "Neo Geo Pocket" -SubIndex 4 -NoGroup
+            break;
+        }
+
         default {
             $folderName = $BaseName | New-RegionFolder
             break
@@ -453,13 +459,18 @@ function New-PlatformRegionFolderStrut {
         [string]$FileName,
         [Parameter(Mandatory = $true)]
         [string]$Platform,
-        [int]$SubIndex = 3
+        [int]$SubIndex = 3,
+        [switch]$NoGroup
     )
 
     $subFolder = $FileName | New-CategorySubFolder -Index $SubIndex
 
     if ($null -eq $subFolder) {
-        $subFolder = Join-Path ($FileName | New-RegionFolder) -ChildPath ($FileName | New-SubFolderName)
+        if ($NoGroup) {
+            $subFolder = ($FileName | New-RegionFolder)
+        } else {
+            $subFolder = Join-Path ($FileName | New-RegionFolder) -ChildPath ($FileName | New-SubFolderName)
+        }
     }
 
     if ($NoPlatform) {
@@ -762,7 +773,7 @@ function Get-RomFilePaths {
             "*.a26", "*.col", "*.fds", "*.gb", "*.gbc", "*.gba", "*.gen", "*.gg", "*.nes",
             "*.pce", "*.sfc", "*.smc", "*.sms", "*.z64", "*.bin", "*.md", "*.32x", "*.neo",
             "*.sgx", "*.sc", "*.lnx", "*.j64", "*.jag", "*.crt", "*.d64", "*.tap", "*.adf",
-            "*.ssd", "*.a52", "*.a78"
+            "*.ssd", "*.a52", "*.a78", "*.ngp", "*.ngc"
         )
 
         Get-ChildItem -Path $Path -Recurse -Include $filter | ForEach-Object {
